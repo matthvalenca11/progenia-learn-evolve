@@ -51,28 +51,31 @@ const Admin = () => {
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      // Se não estiver logado, manda para /auth
       if (!session) {
         navigate("/auth");
         return;
       }
 
-      // Check if user has admin role
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id);
+      // ====== ADMIN LOCAL POR E-MAIL ======
+      const adminEmails = ["mathvalenca@gmail.com"]; // aqui você pode adicionar mais e-mails se quiser
+      const userEmail = session.user.email ?? "";
 
-      const hasAdminRole = roles?.some(r => r.role === "admin");
-      
-      if (!hasAdminRole) {
-        toast.error("Acesso de administrador necessário");
+      const isAdminUser = adminEmails.includes(userEmail);
+
+      if (!isAdminUser) {
+        toast.error("Admin access only");
         navigate("/dashboard");
         return;
       }
 
+      // Se chegou até aqui, é admin
       setIsAdmin(true);
-      loadModules();
+      await loadModules();
       setLoading(false);
     };
 
