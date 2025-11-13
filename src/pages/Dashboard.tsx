@@ -98,7 +98,7 @@ const Dashboard = () => {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    toast.success("Signed out successfully");
+    toast.success("Saiu com sucesso");
     navigate("/");
   };
 
@@ -116,7 +116,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading your dashboard...</p>
+          <p className="text-muted-foreground">Carregando seu painel...</p>
         </div>
       </div>
     );
@@ -150,10 +150,10 @@ const Dashboard = () => {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold mb-2">
-            Welcome back, {profile?.full_name}! 👋
+            Bem-vindo de volta, {profile?.full_name}! 👋
           </h1>
           <p className="text-muted-foreground text-lg">
-            Continue your learning journey
+            Continue sua jornada de aprendizado
           </p>
         </div>
 
@@ -164,8 +164,8 @@ const Dashboard = () => {
               <Trophy className="h-8 w-8 text-secondary" />
               <span className="text-2xl font-bold">{stats?.total_xp || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Total XP</p>
-            <p className="text-xs text-muted-foreground mt-1">Level {stats?.level || 1}</p>
+            <p className="text-sm text-muted-foreground">XP Total</p>
+            <p className="text-xs text-muted-foreground mt-1">Nível {stats?.level || 1}</p>
           </Card>
 
           <Card className="p-6">
@@ -173,8 +173,8 @@ const Dashboard = () => {
               <Zap className="h-8 w-8 text-accent" />
               <span className="text-2xl font-bold">{stats?.streak_days || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Day Streak</p>
-            <p className="text-xs text-muted-foreground mt-1">Keep it going!</p>
+            <p className="text-sm text-muted-foreground">Sequência de Dias</p>
+            <p className="text-xs text-muted-foreground mt-1">Continue assim!</p>
           </Card>
 
           <Card className="p-6">
@@ -182,8 +182,8 @@ const Dashboard = () => {
               <BookOpen className="h-8 w-8 text-primary" />
               <span className="text-2xl font-bold">{stats?.modules_completed || 0}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Modules Done</p>
-            <p className="text-xs text-muted-foreground mt-1">Out of {modules.length}</p>
+            <p className="text-sm text-muted-foreground">Módulos Concluídos</p>
+            <p className="text-xs text-muted-foreground mt-1">De {modules.length}</p>
           </Card>
 
           <Card className="p-6">
@@ -191,8 +191,8 @@ const Dashboard = () => {
               <Clock className="h-8 w-8 text-secondary" />
               <span className="text-2xl font-bold">{Math.floor((stats?.total_time_minutes || 0) / 60)}</span>
             </div>
-            <p className="text-sm text-muted-foreground">Hours Learned</p>
-            <p className="text-xs text-muted-foreground mt-1">This month</p>
+            <p className="text-sm text-muted-foreground">Horas de Estudo</p>
+            <p className="text-xs text-muted-foreground mt-1">Este mês</p>
           </Card>
         </div>
 
@@ -200,9 +200,9 @@ const Dashboard = () => {
         <Card className="p-6 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-semibold mb-1">Your Progress</h2>
+              <h2 className="text-2xl font-semibold mb-1">Seu Progresso</h2>
               <p className="text-muted-foreground">
-                {stats?.modules_completed || 0} of {modules.length} modules completed
+                {stats?.modules_completed || 0} de {modules.length} módulos concluídos
               </p>
             </div>
             <Award className="h-10 w-10 text-secondary" />
@@ -216,19 +216,19 @@ const Dashboard = () => {
         {/* Available Modules */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold">Learning Modules</h2>
+            <h2 className="text-3xl font-bold">Módulos de Aprendizado</h2>
             <Button variant="outline">
               <TrendingUp className="mr-2 h-4 w-4" />
-              View All
+              Ver Todos
             </Button>
           </div>
 
           {modules.length === 0 ? (
             <Card className="p-12 text-center">
               <GraduationCap className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Modules Available Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">Nenhum Módulo Disponível Ainda</h3>
               <p className="text-muted-foreground">
-                Check back soon! Administrators are preparing learning content for you.
+                Volte em breve! Os administradores estão preparando conteúdo de aprendizado para você.
               </p>
             </Card>
           ) : (
@@ -256,7 +256,7 @@ const Dashboard = () => {
                       {module.description}
                     </p>
                     <Button className="w-full" variant="outline">
-                      Start Learning
+                      Começar a Aprender
                     </Button>
                   </div>
                 </Card>

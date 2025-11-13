@@ -28,8 +28,8 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 const moduleSchema = z.object({
-  title: z.string().trim().min(3, "Title must be at least 3 characters").max(200),
-  description: z.string().trim().min(10, "Description must be at least 10 characters").max(1000),
+  title: z.string().trim().min(3, "O título deve ter pelo menos 3 caracteres").max(200),
+  description: z.string().trim().min(10, "A descrição deve ter pelo menos 10 caracteres").max(1000),
   category: z.string().trim().min(2).max(100),
   estimated_hours: z.number().min(1).max(100),
   difficulty_level: z.string(),
@@ -66,7 +66,7 @@ const Admin = () => {
       const hasAdminRole = roles?.some(r => r.role === "admin");
       
       if (!hasAdminRole) {
-        toast.error("Admin access required");
+        toast.error("Acesso de administrador necessário");
         navigate("/dashboard");
         return;
       }
@@ -110,7 +110,7 @@ const Admin = () => {
 
       if (error) throw error;
 
-      toast.success("Module created successfully!");
+      toast.success("Módulo criado com sucesso!");
       setNewModule({
         title: "",
         description: "",
@@ -123,7 +123,7 @@ const Admin = () => {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error("Failed to create module");
+        toast.error("Falha ao criar módulo");
       }
     }
   };
@@ -135,9 +135,9 @@ const Admin = () => {
       .eq("id", moduleId);
 
     if (error) {
-      toast.error("Failed to update module");
+      toast.error("Falha ao atualizar módulo");
     } else {
-      toast.success(currentStatus ? "Module unpublished" : "Module published");
+      toast.success(currentStatus ? "Módulo despublicado" : "Módulo publicado");
       loadModules();
     }
   };
@@ -147,7 +147,7 @@ const Admin = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Checking permissions...</p>
+          <p className="text-muted-foreground">Verificando permissões...</p>
         </div>
       </div>
     );
@@ -162,20 +162,20 @@ const Admin = () => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src={logo} alt="ProGenia" className="h-10" />
-            <span className="text-sm font-medium text-muted-foreground">Admin Panel</span>
+            <span className="text-sm font-medium text-muted-foreground">Painel de Administração</span>
           </div>
           <Button variant="ghost" onClick={() => navigate("/dashboard")}>
             <Home className="mr-2 h-4 w-4" />
-            Back to Dashboard
+            Voltar ao Painel
           </Button>
         </div>
       </nav>
 
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Admin Dashboard</h1>
+          <h1 className="text-4xl font-bold mb-2">Painel de Administração</h1>
           <p className="text-muted-foreground text-lg">
-            Manage your learning platform content
+            Gerencie o conteúdo da sua plataforma de aprendizado
           </p>
         </div>
 
@@ -183,19 +183,19 @@ const Admin = () => {
           <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="modules">
               <BookOpen className="mr-2 h-4 w-4" />
-              Modules
+              Módulos
             </TabsTrigger>
             <TabsTrigger value="users">
               <Users className="mr-2 h-4 w-4" />
-              Users
+              Usuários
             </TabsTrigger>
             <TabsTrigger value="analytics">
               <BarChart className="mr-2 h-4 w-4" />
-              Analytics
+              Análises
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="mr-2 h-4 w-4" />
-              Settings
+              Configurações
             </TabsTrigger>
           </TabsList>
 
@@ -204,41 +204,41 @@ const Admin = () => {
             <Card className="p-6">
               <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
                 <Plus className="h-6 w-6" />
-                Create New Module
+                Criar Novo Módulo
               </h2>
               
               <form onSubmit={handleCreateModule} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="title">Module Title</Label>
+                    <Label htmlFor="title">Título do Módulo</Label>
                     <Input
                       id="title"
                       value={newModule.title}
                       onChange={(e) => setNewModule({ ...newModule, title: e.target.value })}
-                      placeholder="e.g., Electrostimulation Fundamentals"
+                      placeholder="ex: Fundamentos de Eletroestimulação"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="category">Categoria</Label>
                     <Input
                       id="category"
                       value={newModule.category}
                       onChange={(e) => setNewModule({ ...newModule, category: e.target.value })}
-                      placeholder="e.g., Electrotherapy"
+                      placeholder="ex: Eletroterapia"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                  <Label htmlFor="description">Descrição</Label>
                   <Textarea
                     id="description"
                     value={newModule.description}
                     onChange={(e) => setNewModule({ ...newModule, description: e.target.value })}
-                    placeholder="Describe what students will learn..."
+                    placeholder="Descreva o que os alunos aprenderão..."
                     rows={4}
                     required
                   />
@@ -246,7 +246,7 @@ const Admin = () => {
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="difficulty">Difficulty Level</Label>
+                    <Label htmlFor="difficulty">Nível de Dificuldade</Label>
                     <Select
                       value={newModule.difficulty_level}
                       onValueChange={(value) => setNewModule({ ...newModule, difficulty_level: value })}
@@ -255,15 +255,15 @@ const Admin = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="beginner">Beginner</SelectItem>
-                        <SelectItem value="intermediate">Intermediate</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
+                        <SelectItem value="beginner">Iniciante</SelectItem>
+                        <SelectItem value="intermediate">Intermediário</SelectItem>
+                        <SelectItem value="advanced">Avançado</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="hours">Estimated Hours</Label>
+                    <Label htmlFor="hours">Horas Estimadas</Label>
                     <Input
                       id="hours"
                       type="number"
@@ -278,21 +278,21 @@ const Admin = () => {
 
                 <Button type="submit" className="gradient-accent text-white">
                   <Save className="mr-2 h-4 w-4" />
-                  Create Module
+                  Criar Módulo
                 </Button>
               </form>
             </Card>
 
             {/* Existing Modules */}
             <div>
-              <h2 className="text-2xl font-semibold mb-4">Existing Modules ({modules.length})</h2>
+              <h2 className="text-2xl font-semibold mb-4">Módulos Existentes ({modules.length})</h2>
               
               {modules.length === 0 ? (
                 <Card className="p-12 text-center">
                   <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Modules Yet</h3>
+                  <h3 className="text-xl font-semibold mb-2">Nenhum Módulo Ainda</h3>
                   <p className="text-muted-foreground">
-                    Create your first learning module to get started
+                    Crie seu primeiro módulo de aprendizado para começar
                   </p>
                 </Card>
               ) : (
@@ -308,7 +308,7 @@ const Admin = () => {
                                 ? "bg-secondary/10 text-secondary" 
                                 : "bg-muted text-muted-foreground"
                             }`}>
-                              {module.published ? "Published" : "Draft"}
+                              {module.published ? "Publicado" : "Rascunho"}
                             </span>
                           </div>
                           <p className="text-muted-foreground mb-2">{module.description}</p>
@@ -322,7 +322,7 @@ const Admin = () => {
                           variant={module.published ? "outline" : "default"}
                           onClick={() => toggleModulePublish(module.id, module.published)}
                         >
-                          {module.published ? "Unpublish" : "Publish"}
+                          {module.published ? "Despublicar" : "Publicar"}
                         </Button>
                       </div>
                     </Card>
@@ -335,9 +335,9 @@ const Admin = () => {
           <TabsContent value="users">
             <Card className="p-12 text-center">
               <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">User Management</h3>
+              <h3 className="text-xl font-semibold mb-2">Gerenciamento de Usuários</h3>
               <p className="text-muted-foreground">
-                User management features coming soon
+                Recursos de gerenciamento de usuários em breve
               </p>
             </Card>
           </TabsContent>
@@ -345,9 +345,9 @@ const Admin = () => {
           <TabsContent value="analytics">
             <Card className="p-12 text-center">
               <BarChart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Platform Analytics</h3>
+              <h3 className="text-xl font-semibold mb-2">Análises da Plataforma</h3>
               <p className="text-muted-foreground">
-                Analytics dashboard coming soon
+                Painel de análises em breve
               </p>
             </Card>
           </TabsContent>
@@ -355,9 +355,9 @@ const Admin = () => {
           <TabsContent value="settings">
             <Card className="p-12 text-center">
               <Settings className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Platform Settings</h3>
+              <h3 className="text-xl font-semibold mb-2">Configurações da Plataforma</h3>
               <p className="text-muted-foreground">
-                Configuration options coming soon
+                Opções de configuração em breve
               </p>
             </Card>
           </TabsContent>

@@ -18,7 +18,7 @@ const AITutor = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hi! I'm your AI tutor. Ask me anything about the course material, and I'll help you understand complex concepts!",
+      content: "Olá! Sou seu tutor de IA. Pergunte-me qualquer coisa sobre o material do curso e eu vou ajudá-lo a entender conceitos complexos!",
     },
   ]);
   const [input, setInput] = useState("");
@@ -62,30 +62,30 @@ const AITutor = () => {
       console.error("Error calling AI tutor:", error);
       
       if (error.message?.includes("429") || error.status === 429) {
-        toast.error("Rate limit reached. Please wait a moment before trying again.");
+        toast.error("Limite de taxa atingido. Por favor, aguarde um momento antes de tentar novamente.");
         setMessages((prev) => [
           ...prev,
           { 
             role: "assistant", 
-            content: "I'm receiving too many requests right now. Please try again in a moment." 
+            content: "Estou recebendo muitas solicitações agora. Por favor, tente novamente em um momento." 
           },
         ]);
       } else if (error.message?.includes("402") || error.status === 402) {
-        toast.error("AI credits depleted. Please add credits to continue using the AI tutor.");
+        toast.error("Créditos de IA esgotados. Por favor, adicione créditos para continuar usando o tutor de IA.");
         setMessages((prev) => [
           ...prev,
           { 
             role: "assistant", 
-            content: "The AI service requires additional credits. Please contact your administrator." 
+            content: "O serviço de IA requer créditos adicionais. Por favor, entre em contato com seu administrador." 
           },
         ]);
       } else {
-        toast.error("Failed to get response from AI tutor");
+        toast.error("Falha ao obter resposta do tutor de IA");
         setMessages((prev) => [
           ...prev,
           { 
             role: "assistant", 
-            content: "I apologize, but I encountered an error. Please try again." 
+            content: "Peço desculpas, mas encontrei um erro. Por favor, tente novamente." 
           },
         ]);
       }
@@ -116,7 +116,7 @@ const AITutor = () => {
       <div className="flex items-center justify-between p-4 border-b border-border gradient-primary rounded-t-lg">
         <div className="flex items-center gap-2 text-white">
           <Brain className="h-5 w-5" />
-          <span className="font-semibold">AI Tutor</span>
+          <span className="font-semibold">Tutor de IA</span>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -186,7 +186,7 @@ const AITutor = () => {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                placeholder="Ask me anything..."
+                placeholder="Pergunte-me qualquer coisa..."
                 disabled={loading}
                 className="flex-1"
               />

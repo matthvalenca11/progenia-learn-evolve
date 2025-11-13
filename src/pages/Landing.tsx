@@ -15,10 +15,10 @@ const Landing = () => {
           </div>
           <div className="flex items-center gap-4">
             <Link to="/auth">
-              <Button variant="ghost">Sign In</Button>
+              <Button variant="ghost">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button className="bg-gradient-accent text-white shadow-glow">Get Started</Button>
+              <Button className="bg-gradient-accent text-white shadow-glow">Começar</Button>
             </Link>
           </div>
         </div>
@@ -31,29 +31,29 @@ const Landing = () => {
           <div className="max-w-4xl mx-auto text-center space-y-8">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-secondary text-sm font-medium mb-4">
               <Zap className="h-4 w-4" />
-              Scientific Learning Platform
+              Plataforma de Aprendizado Científico
             </div>
             
             <h1 className="text-5xl lg:text-7xl font-bold leading-tight">
-              Master Medical Technology with{" "}
+              Domine a Tecnologia Médica com{" "}
               <span className="text-gradient">ProGenia</span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              A comprehensive digital learning platform for health professionals to understand 
-              the scientific foundations behind therapeutic and diagnostic technologies.
+              Uma plataforma digital abrangente para profissionais de saúde compreenderem 
+              os fundamentos científicos por trás das tecnologias terapêuticas e diagnósticas.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
               <Link to="/auth">
                 <Button size="lg" className="gradient-accent text-white shadow-xl hover:shadow-glow transition-smooth text-lg px-8">
                   <GraduationCap className="mr-2 h-5 w-5" />
-                  Start Learning
+                  Começar a Aprender
                 </Button>
               </Link>
               <Link to="/auth">
                 <Button size="lg" variant="outline" className="text-lg px-8">
-                  Explore Modules
+                  Explorar Módulos
                 </Button>
               </Link>
             </div>
@@ -65,9 +65,9 @@ const Landing = () => {
       <section className="py-20 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">Why Choose ProGenia?</h2>
+            <h2 className="text-4xl font-bold mb-4">Por Que Escolher a ProGenia?</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Cutting-edge features designed for modern medical education
+              Recursos de ponta projetados para a educação médica moderna
             </p>
           </div>
           
@@ -76,9 +76,9 @@ const Landing = () => {
               <div className="rounded-lg bg-secondary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <Brain className="h-7 w-7 text-secondary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">AI Tutor</h3>
+              <h3 className="text-2xl font-semibold mb-3">Tutor de IA</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Get personalized help with our context-aware AI assistant, available 24/7 to answer questions and provide explanations.
+                Obtenha ajuda personalizada com nosso assistente de IA contextual, disponível 24/7 para responder perguntas e fornecer explicações.
               </p>
             </Card>
 
@@ -86,9 +86,9 @@ const Landing = () => {
               <div className="rounded-lg bg-primary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <Microscope className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Virtual Labs</h3>
+              <h3 className="text-2xl font-semibold mb-3">Laboratórios Virtuais</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Experiment with simulated therapeutic parameters and see real-time biological responses in a safe environment.
+                Experimente com parâmetros terapêuticos simulados e veja respostas biológicas em tempo real em um ambiente seguro.
               </p>
             </Card>
 
@@ -96,9 +96,9 @@ const Landing = () => {
               <div className="rounded-lg bg-secondary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <Award className="h-7 w-7 text-secondary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Gamification</h3>
+              <h3 className="text-2xl font-semibold mb-3">Gamificação</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Earn badges, level up, and track your progress as you master each module and achieve learning milestones.
+                Ganhe emblemas, suba de nível e acompanhe seu progresso ao dominar cada módulo e alcançar marcos de aprendizado.
               </p>
             </Card>
 
@@ -106,9 +106,9 @@ const Landing = () => {
               <div className="rounded-lg bg-primary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <GraduationCap className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Expert Content</h3>
+              <h3 className="text-2xl font-semibold mb-3">Conteúdo Especializado</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Learn from scientifically accurate, peer-reviewed content covering electrostimulation, imaging, and more.
+                Aprenda com conteúdo cientificamente preciso e revisado por pares, cobrindo eletroestimulação, imagem e muito mais.
               </p>
             </Card>
 
@@ -116,9 +116,9 @@ const Landing = () => {
               <div className="rounded-lg bg-secondary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <Users className="h-7 w-7 text-secondary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Progress Tracking</h3>
+              <h3 className="text-2xl font-semibold mb-3">Acompanhamento de Progresso</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Monitor your learning journey with detailed analytics, completion rates, and personalized recommendations.
+                Monitore sua jornada de aprendizado com análises detalhadas, taxas de conclusão e recomendações personalizadas.
               </p>
             </Card>
 
@@ -126,9 +126,9 @@ const Landing = () => {
               <div className="rounded-lg bg-primary/10 w-14 h-14 flex items-center justify-center mb-4">
                 <Zap className="h-7 w-7 text-primary" />
               </div>
-              <h3 className="text-2xl font-semibold mb-3">Interactive Learning</h3>
+              <h3 className="text-2xl font-semibold mb-3">Aprendizado Interativo</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Engage with videos, animations, quizzes, and case studies designed to maximize retention and understanding.
+                Envolva-se com vídeos, animações, questionários e estudos de caso projetados para maximizar a retenção e compreensão.
               </p>
             </Card>
           </div>
@@ -141,15 +141,15 @@ const Landing = () => {
         <div className="container mx-auto px-4 relative">
           <div className="max-w-3xl mx-auto text-center space-y-8">
             <h2 className="text-4xl lg:text-5xl font-bold">
-              Ready to Transform Your Medical Knowledge?
+              Pronto para Transformar Seu Conhecimento Médico?
             </h2>
             <p className="text-xl text-muted-foreground">
-              Join ProGenia today and start your journey towards mastering medical technology.
+              Junte-se à ProGenia hoje e comece sua jornada rumo ao domínio da tecnologia médica.
             </p>
             <Link to="/auth">
               <Button size="lg" className="gradient-accent text-white shadow-xl hover:shadow-glow transition-smooth text-lg px-12">
                 <GraduationCap className="mr-2 h-5 w-5" />
-                Get Started Free
+                Começar Gratuitamente
               </Button>
             </Link>
           </div>

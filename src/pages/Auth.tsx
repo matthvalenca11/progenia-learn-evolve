@@ -11,15 +11,15 @@ import logo from "@/assets/logo.png";
 import { z } from "zod";
 
 const signUpSchema = z.object({
-  fullName: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
-  email: z.string().trim().email("Invalid email address").max(255),
-  password: z.string().min(8, "Password must be at least 8 characters").max(100),
+  fullName: z.string().trim().min(2, "O nome deve ter pelo menos 2 caracteres").max(100),
+  email: z.string().trim().email("Endereço de e-mail inválido").max(255),
+  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres").max(100),
   institution: z.string().trim().max(200).optional(),
 });
 
 const signInSchema = z.object({
-  email: z.string().trim().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().trim().email("Endereço de e-mail inválido"),
+  password: z.string().min(1, "A senha é obrigatória"),
 });
 
 const Auth = () => {
@@ -81,18 +81,18 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("already registered")) {
-          toast.error("This email is already registered. Please sign in instead.");
+          toast.error("Este e-mail já está registrado. Por favor, faça login.");
         } else {
           toast.error(error.message);
         }
       } else {
-        toast.success("Account created! Redirecting to dashboard...");
+        toast.success("Conta criada! Redirecionando para o painel...");
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error("An error occurred during sign up");
+        toast.error("Ocorreu um erro durante o cadastro");
       }
     } finally {
       setLoading(false);
@@ -113,18 +113,18 @@ const Auth = () => {
 
       if (error) {
         if (error.message.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password");
+          toast.error("E-mail ou senha inválidos");
         } else {
           toast.error(error.message);
         }
       } else {
-        toast.success("Welcome back!");
+        toast.success("Bem-vindo de volta!");
       }
     } catch (error) {
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
       } else {
-        toast.error("An error occurred during sign in");
+        toast.error("Ocorreu um erro durante o login");
       }
     } finally {
       setLoading(false);
@@ -136,34 +136,34 @@ const Auth = () => {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src={logo} alt="ProGenia" className="h-16 mx-auto mb-4" />
-          <h1 className="text-3xl font-bold">Welcome to ProGenia</h1>
+          <h1 className="text-3xl font-bold">Bem-vindo à ProGenia</h1>
           <p className="text-muted-foreground mt-2">
-            Your journey to mastering medical technology starts here
+            Sua jornada para dominar a tecnologia médica começa aqui
           </p>
         </div>
 
         <Card className="p-6">
           <Tabs defaultValue="signin" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+              <TabsTrigger value="signin">Entrar</TabsTrigger>
+              <TabsTrigger value="signup">Cadastrar</TabsTrigger>
             </TabsList>
 
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
+                  <Label htmlFor="signin-email">E-mail</Label>
                   <Input
                     id="signin-email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="seu.email@exemplo.com"
                     value={signInData.email}
                     onChange={(e) => setSignInData({ ...signInData, email: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
+                  <Label htmlFor="signin-password">Senha</Label>
                   <Input
                     id="signin-password"
                     type="password"
@@ -174,7 +174,7 @@ const Auth = () => {
                   />
                 </div>
                 <Button type="submit" className="w-full gradient-accent text-white" disabled={loading}>
-                  {loading ? "Signing in..." : "Sign In"}
+                  {loading ? "Entrando..." : "Entrar"}
                 </Button>
               </form>
             </TabsContent>
@@ -182,39 +182,39 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
+                  <Label htmlFor="signup-name">Nome Completo</Label>
                   <Input
                     id="signup-name"
                     type="text"
-                    placeholder="John Doe"
+                    placeholder="João Silva"
                     value={signUpData.fullName}
                     onChange={(e) => setSignUpData({ ...signUpData, fullName: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">E-mail</Label>
                   <Input
                     id="signup-email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    placeholder="seu.email@exemplo.com"
                     value={signUpData.email}
                     onChange={(e) => setSignUpData({ ...signUpData, email: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-institution">Institution (Optional)</Label>
+                  <Label htmlFor="signup-institution">Instituição (Opcional)</Label>
                   <Input
                     id="signup-institution"
                     type="text"
-                    placeholder="Your university or hospital"
+                    placeholder="Sua universidade ou hospital"
                     value={signUpData.institution}
                     onChange={(e) => setSignUpData({ ...signUpData, institution: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Senha</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -224,11 +224,11 @@ const Auth = () => {
                     required
                   />
                   <p className="text-xs text-muted-foreground">
-                    Must be at least 8 characters
+                    Deve ter pelo menos 8 caracteres
                   </p>
                 </div>
                 <Button type="submit" className="w-full gradient-accent text-white" disabled={loading}>
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? "Criando conta..." : "Criar Conta"}
                 </Button>
               </form>
             </TabsContent>
