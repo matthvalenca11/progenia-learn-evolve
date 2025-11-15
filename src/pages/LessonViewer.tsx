@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ContentBlock, BlockData } from "@/components/lesson/ContentBlock";
 import { 
   ChevronLeft, 
   FileText, 
@@ -236,6 +237,19 @@ export default function LessonViewer() {
                   className="prose dark:prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: lesson.conteudo_rich_text }}
                 />
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Aula Composta com Blocos */}
+          {lesson.content_type === "composto" && lesson.content_data?.blocks && (
+            <Card>
+              <CardContent className="pt-6 space-y-8">
+                {(lesson.content_data.blocks as BlockData[])
+                  .sort((a, b) => a.order - b.order)
+                  .map((block) => (
+                    <ContentBlock key={block.id} block={block} />
+                  ))}
               </CardContent>
             </Card>
           )}
