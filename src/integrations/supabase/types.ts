@@ -16,30 +16,129 @@ export type Database = {
     Tables: {
       badges: {
         Row: {
+          categoria: string | null
           created_at: string | null
           criteria: Json | null
           description: string | null
           icon: string | null
           id: string
           name: string
+          ordem: number | null
+          pontos_recompensa: number | null
         }
         Insert: {
+          categoria?: string | null
           created_at?: string | null
           criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name: string
+          ordem?: number | null
+          pontos_recompensa?: number | null
         }
         Update: {
+          categoria?: string | null
           created_at?: string | null
           criteria?: Json | null
           description?: string | null
           icon?: string | null
           id?: string
           name?: string
+          ordem?: number | null
+          pontos_recompensa?: number | null
         }
         Relationships: []
+      }
+      gamification_rules: {
+        Row: {
+          acao: string
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          pontos: number
+          updated_at: string | null
+        }
+        Insert: {
+          acao: string
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          pontos: number
+          updated_at?: string | null
+        }
+        Update: {
+          acao?: string
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          pontos?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      lesson_progress: {
+        Row: {
+          created_at: string | null
+          data_conclusao: string | null
+          data_inicio: string | null
+          id: string
+          lesson_id: string
+          quiz_score: number | null
+          quiz_tentativas: number | null
+          status: Database["public"]["Enums"]["progress_status"] | null
+          tempo_gasto_minutos: number | null
+          ultima_posicao_video: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          id?: string
+          lesson_id: string
+          quiz_score?: number | null
+          quiz_tentativas?: number | null
+          status?: Database["public"]["Enums"]["progress_status"] | null
+          tempo_gasto_minutos?: number | null
+          ultima_posicao_video?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_conclusao?: string | null
+          data_inicio?: string | null
+          id?: string
+          lesson_id?: string
+          quiz_score?: number | null
+          quiz_tentativas?: number | null
+          status?: Database["public"]["Enums"]["progress_status"] | null
+          tempo_gasto_minutos?: number | null
+          ultima_posicao_video?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lesson_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lessons: {
         Row: {
@@ -172,31 +271,78 @@ export type Database = {
         }
         Relationships: []
       }
+      points_history: {
+        Row: {
+          created_at: string | null
+          descricao: string | null
+          id: string
+          origem: string
+          origem_id: string | null
+          pontos: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          origem: string
+          origem_id?: string | null
+          pontos: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          origem?: string
+          origem_id?: string | null
+          pontos?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          cargo: string | null
           created_at: string | null
+          descricao: string | null
           full_name: string
           id: string
           institution: string | null
+          papel: Database["public"]["Enums"]["user_role"] | null
           professional_role: string | null
           updated_at: string | null
         }
         Insert: {
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string | null
+          descricao?: string | null
           full_name: string
           id: string
           institution?: string | null
+          papel?: Database["public"]["Enums"]["user_role"] | null
           professional_role?: string | null
           updated_at?: string | null
         }
         Update: {
           avatar_url?: string | null
+          cargo?: string | null
           created_at?: string | null
+          descricao?: string | null
           full_name?: string
           id?: string
           institution?: string | null
+          papel?: Database["public"]["Enums"]["user_role"] | null
           professional_role?: string | null
           updated_at?: string | null
         }
@@ -434,6 +580,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_level: { Args: { total_xp: number }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -444,6 +591,14 @@ export type Database = {
     }
     Enums: {
       app_role: "student" | "admin"
+      lab_type:
+        | "mri_viewer"
+        | "ultrassom_simulador"
+        | "eletroterapia_sim"
+        | "termico_sim"
+      lesson_type: "video" | "artigo" | "quiz" | "laboratorio_virtual"
+      progress_status: "nao_iniciado" | "em_progresso" | "concluido"
+      user_role: "aluno" | "instrutor" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -572,6 +727,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["student", "admin"],
+      lab_type: [
+        "mri_viewer",
+        "ultrassom_simulador",
+        "eletroterapia_sim",
+        "termico_sim",
+      ],
+      lesson_type: ["video", "artigo", "quiz", "laboratorio_virtual"],
+      progress_status: ["nao_iniciado", "em_progresso", "concluido"],
+      user_role: ["aluno", "instrutor", "admin"],
     },
   },
 } as const
