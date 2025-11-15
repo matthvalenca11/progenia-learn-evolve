@@ -56,6 +56,8 @@ export const progressService = {
         lesson_id: lessonId,
         status: "em_progresso",
         data_inicio: new Date().toISOString(),
+      }, {
+        onConflict: "user_id,lesson_id"
       })
       .select()
       .single();
@@ -76,6 +78,8 @@ export const progressService = {
         ultima_posicao_video: position,
         tempo_gasto_minutos: Math.floor(totalTime / 60),
         status: "em_progresso",
+      }, {
+        onConflict: "user_id,lesson_id"
       });
 
     if (error) throw error;
@@ -92,6 +96,8 @@ export const progressService = {
         lesson_id: lessonId,
         status: "concluido",
         data_conclusao: new Date().toISOString(),
+      }, {
+        onConflict: "user_id,lesson_id"
       })
       .select()
       .single();
@@ -137,6 +143,8 @@ export const progressService = {
         quiz_tentativas: 1, // Incrementar depois
         status: score >= 70 ? "concluido" : "em_progresso",
         data_conclusao: score >= 70 ? new Date().toISOString() : null,
+      }, {
+        onConflict: "user_id,lesson_id"
       });
 
     if (progressError) throw progressError;
