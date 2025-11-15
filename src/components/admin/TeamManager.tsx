@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Save, Trash2, Users, Upload, UserCircle } from "lucide-react";
-import { toast } from "sonner";
+import { FileUploadField } from "@/components/ui/FileUploadField";
+import { storageService } from "@/services/storageService";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Plus, Save, Trash2, Users, Edit2, X } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface TeamMember {
   id: string;
@@ -44,12 +47,20 @@ export const TeamManager = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error("Por favor, selecione uma imagem");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Por favor, selecione uma imagem",
+      });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A imagem deve ter no máximo 2MB",
+      });
       return;
     }
 
@@ -70,10 +81,17 @@ export const TeamManager = () => {
         .getPublicUrl(filePath);
 
       setEditingMember({ ...editingMember, photo_url: publicUrl });
-      toast.success("Foto enviada com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Foto enviada com sucesso!",
+      });
     } catch (error) {
       console.error("Erro no upload:", error);
-      toast.error("Erro ao enviar foto");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao enviar foto",
+      });
     } finally {
       setUploading(false);
     }
@@ -81,7 +99,11 @@ export const TeamManager = () => {
 
   const handleSave = async () => {
     if (!editingMember.name || !editingMember.role) {
-      toast.error("Nome e função são obrigatórios");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Nome e função são obrigatórios",
+      });
       return;
     }
 
@@ -97,7 +119,10 @@ export const TeamManager = () => {
           })
           .eq("id", editingMember.id);
         if (error) throw error;
-        toast.success("Membro atualizado!");
+        toast({
+          title: "Sucesso",
+          description: "Membro atualizado!",
+        });
       } else {
         const { error } = await supabase.from("team_members").insert({
           name: editingMember.name,
@@ -107,14 +132,21 @@ export const TeamManager = () => {
           ordem: team.length,
         });
         if (error) throw error;
-        toast.success("Membro adicionado!");
+        toast({
+          title: "Sucesso",
+          description: "Membro adicionado!",
+        });
       }
 
       setEditingMember({ name: "", role: "", bio: "", photo_url: "" });
       loadTeam();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar membro");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar membro",
+      });
     }
   };
 
