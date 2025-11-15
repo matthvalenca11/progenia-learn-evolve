@@ -177,7 +177,7 @@ const Sobre = () => {
                 { step: "1", title: "Fundamentos", desc: "Base teórica essencial" },
                 { step: "2", title: "Prática Virtual", desc: "Simulações e labs" },
                 { step: "3", title: "Avaliação", desc: "Quizzes e casos clínicos" },
-                { step: "4", title: "Certificação", desc: "Reconhecimento oficial" }
+                { step: "4", title: "Certificação", desc: "Reconhecimento" }
               ].map((item, i) => (
                 <div key={i} className="text-center">
                   <div className="w-16 h-16 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold mx-auto mb-3">
