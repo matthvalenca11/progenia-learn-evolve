@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { moduleService } from "@/services/moduleService";
 import { lessonService } from "@/services/lessonService";
 import { storageService } from "@/services/storageService";
+import { quizService, QuizPergunta, QuizAlternativa } from "@/services/quizService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileUploadField } from "@/components/ui/FileUploadField";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Separator } from "@/components/ui/separator";
+import { QuizQuestionsEditor } from "@/components/admin/QuizQuestionsEditor";
 import { toast } from "@/hooks/use-toast";
 import { 
   GraduationCap, 
@@ -44,6 +47,21 @@ export function LessonsManager() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [assetFiles, setAssetFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  
+  // Estados para Quiz
+  const [quizData, setQuizData] = useState({
+    titulo: "",
+    descricao: "",
+    nota_minima_aprovacao: 70,
+    tentativas_maximas: 3,
+    tempo_limite_segundos: null as number | null,
+    modo_de_navegacao: "livre",
+    aleatorizar_ordem_perguntas: false,
+    aleatorizar_ordem_alternativas: true,
+    feedback_imediato: false,
+    ativo: true,
+  });
+  const [perguntas, setPerguntas] = useState<(QuizPergunta & { alternativas: QuizAlternativa[] })[]>([]);
 
   useEffect(() => {
     loadModules();
@@ -84,7 +102,7 @@ export function LessonsManager() {
     }
   };
 
-  const startEdit = (lesson?: any) => {
+  const startEdit = async (lesson?: any) => {
     if (lesson) {
       setEditing(lesson.id);
       setFormData({
@@ -96,6 +114,29 @@ export function LessonsManager() {
         conteudo_rich_text: lesson.conteudo_rich_text || "",
         published: lesson.published || false,
       });
+      
+      // Carregar dados do quiz se for tipo quiz
+      if (lesson.content_type === "quiz") {
+        const quizzes = await quizService.getQuizzesByLesson(lesson.id);
+        if (quizzes.length > 0) {
+          const quiz = quizzes[0];
+          setQuizData({
+            titulo: quiz.titulo,
+            descricao: quiz.descricao || "",
+            nota_minima_aprovacao: quiz.nota_minima_aprovacao,
+            tentativas_maximas: quiz.tentativas_maximas,
+            tempo_limite_segundos: quiz.tempo_limite_segundos,
+            modo_de_navegacao: quiz.modo_de_navegacao,
+            aleatorizar_ordem_perguntas: quiz.aleatorizar_ordem_perguntas,
+            aleatorizar_ordem_alternativas: quiz.aleatorizar_ordem_alternativas,
+            feedback_imediato: quiz.feedback_imediato,
+            ativo: quiz.ativo,
+          });
+          
+          const perguntasData = await quizService.getPerguntasByQuiz(quiz.id);
+          setPerguntas(perguntasData);
+        }
+      }
     } else {
       setEditing("new");
       setFormData({
@@ -107,6 +148,19 @@ export function LessonsManager() {
         conteudo_rich_text: "",
         published: false,
       });
+      setQuizData({
+        titulo: "",
+        descricao: "",
+        nota_minima_aprovacao: 70,
+        tentativas_maximas: 3,
+        tempo_limite_segundos: null,
+        modo_de_navegacao: "livre",
+        aleatorizar_ordem_perguntas: false,
+        aleatorizar_ordem_alternativas: true,
+        feedback_imediato: false,
+        ativo: true,
+      });
+      setPerguntas([]);
     }
     setVideoFile(null);
     setAssetFiles([]);
@@ -123,6 +177,19 @@ export function LessonsManager() {
       conteudo_rich_text: "",
       published: false,
     });
+    setQuizData({
+      titulo: "",
+      descricao: "",
+      nota_minima_aprovacao: 70,
+      tentativas_maximas: 3,
+      tempo_limite_segundos: null,
+      modo_de_navegacao: "livre",
+      aleatorizar_ordem_perguntas: false,
+      aleatorizar_ordem_alternativas: true,
+      feedback_imediato: false,
+      ativo: true,
+    });
+    setPerguntas([]);
     setVideoFile(null);
     setAssetFiles([]);
   };
@@ -230,6 +297,74 @@ export function LessonsManager() {
         toast({
           title: "Aula atualizada",
           description: "As alterações foram salvas com sucesso",
+        });
+      }
+
+      // Salvar quiz se for tipo quiz
+      if (formData.content_type === "quiz") {
+        // Buscar quiz existente
+        const existingQuizzes = await quizService.getQuizzesByLesson(lessonId);
+        let quizId: string;
+        
+        if (existingQuizzes.length > 0) {
+          // Atualizar quiz existente
+          quizId = existingQuizzes[0].id;
+          await quizService.updateQuiz(quizId, {
+            ...quizData,
+            titulo: quizData.titulo || formData.title,
+          });
+        } else {
+          // Criar novo quiz
+          const newQuiz = await quizService.createQuiz({
+            aula_id: lessonId,
+            ...quizData,
+            titulo: quizData.titulo || formData.title,
+          });
+          quizId = newQuiz.id;
+        }
+
+        // Salvar perguntas e alternativas
+        for (const pergunta of perguntas) {
+          if (pergunta.id && pergunta.id.startsWith('temp-')) {
+            // Nova pergunta
+            const { id, alternativas, created_at, ...perguntaData } = pergunta;
+            const novaPergunta = await quizService.createPergunta({
+              ...perguntaData,
+              quiz_id: quizId,
+            });
+
+            // Salvar alternativas
+            for (const alt of alternativas) {
+              const { id: altId, created_at: altCreated, ...altData } = alt;
+              await quizService.createAlternativa({
+                ...altData,
+                pergunta_id: novaPergunta.id,
+              });
+            }
+          } else {
+            // Atualizar pergunta existente
+            const { alternativas, created_at, ...perguntaData } = pergunta;
+            await quizService.updatePergunta(pergunta.id, perguntaData);
+
+            // Atualizar/criar alternativas
+            for (const alt of alternativas) {
+              if (alt.id.startsWith('temp-alt-')) {
+                const { id: altId, created_at: altCreated, ...altData } = alt;
+                await quizService.createAlternativa({
+                  ...altData,
+                  pergunta_id: pergunta.id,
+                });
+              } else {
+                const { created_at: altCreated, ...altData } = alt;
+                await quizService.updateAlternativa(alt.id, altData);
+              }
+            }
+          }
+        }
+        
+        toast({
+          title: "Quiz salvo",
+          description: "Quiz e perguntas foram salvos com sucesso",
         });
       }
 
@@ -389,6 +524,126 @@ export function LessonsManager() {
                   min={0}
                 />
               </div>
+
+              {formData.content_type === "quiz" && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold">Configurações do Quiz</h3>
+                    
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Título do Quiz</Label>
+                        <Input
+                          value={quizData.titulo}
+                          onChange={(e) => setQuizData({ ...quizData, titulo: e.target.value })}
+                          placeholder="Deixe vazio para usar o título da aula"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Nota Mínima para Aprovação (%)</Label>
+                        <Input
+                          type="number"
+                          value={quizData.nota_minima_aprovacao}
+                          onChange={(e) => setQuizData({ ...quizData, nota_minima_aprovacao: parseInt(e.target.value) || 70 })}
+                          min={0}
+                          max={100}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Tentativas Máximas</Label>
+                        <Input
+                          type="number"
+                          value={quizData.tentativas_maximas}
+                          onChange={(e) => setQuizData({ ...quizData, tentativas_maximas: parseInt(e.target.value) || 3 })}
+                          min={1}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Tempo Limite (segundos, opcional)</Label>
+                        <Input
+                          type="number"
+                          value={quizData.tempo_limite_segundos || ""}
+                          onChange={(e) => setQuizData({ ...quizData, tempo_limite_segundos: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="Sem limite"
+                          min={0}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Modo de Navegação</Label>
+                        <Select
+                          value={quizData.modo_de_navegacao}
+                          onValueChange={(v) => setQuizData({ ...quizData, modo_de_navegacao: v })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="livre">Navegação Livre</SelectItem>
+                            <SelectItem value="sequencial">Sequencial (não pode voltar)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Descrição do Quiz</Label>
+                      <Textarea
+                        value={quizData.descricao}
+                        onChange={(e) => setQuizData({ ...quizData, descricao: e.target.value })}
+                        placeholder="Instruções ou descrição do quiz"
+                        rows={2}
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-3 p-4 border rounded-lg">
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <div>
+                          <div className="font-medium">Aleatorizar Perguntas</div>
+                          <div className="text-sm text-muted-foreground">Ordem das perguntas será aleatória</div>
+                        </div>
+                        <Switch
+                          checked={quizData.aleatorizar_ordem_perguntas}
+                          onCheckedChange={(checked) => setQuizData({ ...quizData, aleatorizar_ordem_perguntas: checked })}
+                        />
+                      </label>
+                      
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <div>
+                          <div className="font-medium">Aleatorizar Alternativas</div>
+                          <div className="text-sm text-muted-foreground">Ordem das respostas será aleatória</div>
+                        </div>
+                        <Switch
+                          checked={quizData.aleatorizar_ordem_alternativas}
+                          onCheckedChange={(checked) => setQuizData({ ...quizData, aleatorizar_ordem_alternativas: checked })}
+                        />
+                      </label>
+                      
+                      <label className="flex items-center justify-between cursor-pointer">
+                        <div>
+                          <div className="font-medium">Feedback Imediato</div>
+                          <div className="text-sm text-muted-foreground">Mostrar se acertou ou errou após cada resposta</div>
+                        </div>
+                        <Switch
+                          checked={quizData.feedback_imediato}
+                          onCheckedChange={(checked) => setQuizData({ ...quizData, feedback_imediato: checked })}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <Separator />
+                  
+                  <QuizQuestionsEditor
+                    perguntas={perguntas}
+                    onChange={setPerguntas}
+                  />
+                </>
+              )}
 
               {formData.content_type === "video" && (
                 <>
