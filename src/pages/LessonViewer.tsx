@@ -26,7 +26,7 @@ import { toast } from "@/hooks/use-toast";
 export default function LessonViewer() {
   const { lessonId } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [lesson, setLesson] = useState<any>(null);
   const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -34,11 +34,16 @@ export default function LessonViewer() {
   const [lab, setLab] = useState<any>(null);
 
   useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
+      return;
+    }
+
     if (lessonId && user) {
       loadLesson();
       loadProgress();
     }
-  }, [lessonId, user]);
+  }, [lessonId, user, authLoading, navigate]);
 
   const loadLesson = async () => {
     try {
