@@ -21,7 +21,7 @@ const Landing = () => {
               <Button variant="ghost">Entrar</Button>
             </Link>
             <Link to="/auth">
-              <Button className="bg-gradient-accent text-white shadow-glow">Começar</Button>
+              <Button className="gradient-accent text-white shadow-glow">Começar</Button>
             </Link>
           </div>
         </div>
