@@ -22,6 +22,7 @@ import { UsersManager } from "@/components/admin/UsersManager";
 import { GamificationManager } from "@/components/admin/GamificationManager";
 import { ModulesManager } from "@/components/admin/ModulesManager";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
+import QuizManager from "@/components/admin/QuizManager";
 
 const Admin = () => {
   const navigate = useNavigate();

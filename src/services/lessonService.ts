@@ -47,6 +47,19 @@ export const lessonService = {
   },
 
   /**
+   * Listar todas as aulas (admin)
+   */
+  async getAllLessons() {
+    const { data, error } = await supabase
+      .from("lessons")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  /**
    * Obter aula por ID
    */
   async getLessonById(id: string) {

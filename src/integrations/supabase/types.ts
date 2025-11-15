@@ -360,6 +360,170 @@ export type Database = {
         }
         Relationships: []
       }
+      quiz_alternativas: {
+        Row: {
+          correta: boolean
+          created_at: string
+          explicacao_feedback: string | null
+          id: string
+          ordem_base: number
+          pergunta_id: string
+          texto: string
+        }
+        Insert: {
+          correta?: boolean
+          created_at?: string
+          explicacao_feedback?: string | null
+          id?: string
+          ordem_base: number
+          pergunta_id: string
+          texto: string
+        }
+        Update: {
+          correta?: boolean
+          created_at?: string
+          explicacao_feedback?: string | null
+          id?: string
+          ordem_base?: number
+          pergunta_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_alternativas_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_perguntas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_metricas_usuario: {
+        Row: {
+          id: string
+          media_acerto_por_dificuldade: Json | null
+          media_tempo_resposta: number | null
+          melhor_pontuacao: number | null
+          quiz_id: string
+          taxa_evolucao: number | null
+          topicos_dificeis: string[] | null
+          total_tentativas: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          media_acerto_por_dificuldade?: Json | null
+          media_tempo_resposta?: number | null
+          melhor_pontuacao?: number | null
+          quiz_id: string
+          taxa_evolucao?: number | null
+          topicos_dificeis?: string[] | null
+          total_tentativas?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          media_acerto_por_dificuldade?: Json | null
+          media_tempo_resposta?: number | null
+          melhor_pontuacao?: number | null
+          quiz_id?: string
+          taxa_evolucao?: number | null
+          topicos_dificeis?: string[] | null
+          total_tentativas?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_metricas_usuario_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_perguntas: {
+        Row: {
+          created_at: string
+          enunciado: string
+          id: string
+          imagem_url: string | null
+          nivel_dificuldade: string
+          ordem: number
+          quiz_id: string
+          tags: string[] | null
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          enunciado: string
+          id?: string
+          imagem_url?: string | null
+          nivel_dificuldade?: string
+          ordem: number
+          quiz_id: string
+          tags?: string[] | null
+          tipo?: string
+        }
+        Update: {
+          created_at?: string
+          enunciado?: string
+          id?: string
+          imagem_url?: string | null
+          nivel_dificuldade?: string
+          ordem?: number
+          quiz_id?: string
+          tags?: string[] | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_perguntas_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_recomendacoes: {
+        Row: {
+          created_at: string
+          id: string
+          quiz_id: string
+          recomendacao_gerada: string
+          topicos_revisar: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          quiz_id: string
+          recomendacao_gerada: string
+          topicos_revisar?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          quiz_id?: string
+          recomendacao_gerada?: string
+          topicos_revisar?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_recomendacoes_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quiz_results: {
         Row: {
           completed_at: string | null
@@ -392,6 +556,167 @@ export type Database = {
           {
             foreignKeyName: "quiz_results_lesson_id_fkey"
             columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_tentativa_respostas: {
+        Row: {
+          alternativa_id_escolhida: string | null
+          correta: boolean
+          created_at: string
+          id: string
+          pergunta_id: string
+          resposta_texto: string | null
+          tempo_resposta_segundos: number | null
+          tentativa_id: string
+        }
+        Insert: {
+          alternativa_id_escolhida?: string | null
+          correta: boolean
+          created_at?: string
+          id?: string
+          pergunta_id: string
+          resposta_texto?: string | null
+          tempo_resposta_segundos?: number | null
+          tentativa_id: string
+        }
+        Update: {
+          alternativa_id_escolhida?: string | null
+          correta?: boolean
+          created_at?: string
+          id?: string
+          pergunta_id?: string
+          resposta_texto?: string | null
+          tempo_resposta_segundos?: number | null
+          tentativa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_tentativa_respostas_alternativa_id_escolhida_fkey"
+            columns: ["alternativa_id_escolhida"]
+            isOneToOne: false
+            referencedRelation: "quiz_alternativas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_tentativa_respostas_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_perguntas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_tentativa_respostas_tentativa_id_fkey"
+            columns: ["tentativa_id"]
+            isOneToOne: false
+            referencedRelation: "quiz_tentativas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quiz_tentativas: {
+        Row: {
+          acertos: number
+          aprovado: boolean
+          criado_em: string
+          erros: number
+          id: string
+          numero_tentativa: number
+          pontuacao_percentual: number
+          quiz_id: string
+          tempo_gasto_segundos: number | null
+          usuario_id: string
+        }
+        Insert: {
+          acertos: number
+          aprovado: boolean
+          criado_em?: string
+          erros: number
+          id?: string
+          numero_tentativa: number
+          pontuacao_percentual: number
+          quiz_id: string
+          tempo_gasto_segundos?: number | null
+          usuario_id: string
+        }
+        Update: {
+          acertos?: number
+          aprovado?: boolean
+          criado_em?: string
+          erros?: number
+          id?: string
+          numero_tentativa?: number
+          pontuacao_percentual?: number
+          quiz_id?: string
+          tempo_gasto_segundos?: number | null
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_tentativas_quiz_id_fkey"
+            columns: ["quiz_id"]
+            isOneToOne: false
+            referencedRelation: "quizzes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quizzes: {
+        Row: {
+          aleatorizar_ordem_alternativas: boolean
+          aleatorizar_ordem_perguntas: boolean
+          ativo: boolean
+          aula_id: string
+          created_at: string
+          descricao: string | null
+          feedback_imediato: boolean
+          id: string
+          modo_de_navegacao: string
+          nota_minima_aprovacao: number
+          tempo_limite_segundos: number | null
+          tentativas_maximas: number
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          aleatorizar_ordem_alternativas?: boolean
+          aleatorizar_ordem_perguntas?: boolean
+          ativo?: boolean
+          aula_id: string
+          created_at?: string
+          descricao?: string | null
+          feedback_imediato?: boolean
+          id?: string
+          modo_de_navegacao?: string
+          nota_minima_aprovacao?: number
+          tempo_limite_segundos?: number | null
+          tentativas_maximas?: number
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          aleatorizar_ordem_alternativas?: boolean
+          aleatorizar_ordem_perguntas?: boolean
+          ativo?: boolean
+          aula_id?: string
+          created_at?: string
+          descricao?: string | null
+          feedback_imediato?: boolean
+          id?: string
+          modo_de_navegacao?: string
+          nota_minima_aprovacao?: number
+          tempo_limite_segundos?: number | null
+          tentativas_maximas?: number
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_aula_id_fkey"
+            columns: ["aula_id"]
             isOneToOne: false
             referencedRelation: "lessons"
             referencedColumns: ["id"]
