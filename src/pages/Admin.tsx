@@ -21,11 +21,18 @@ import {
   BarChart, 
   Settings,
   Home,
-  Save
+  Save,
+  GraduationCap,
+  Handshake,
+  UsersRound,
+  Beaker
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
 import { z } from "zod";
+import { LessonsManager } from "@/components/admin/LessonsManager";
+import { PartnersManager } from "@/components/admin/PartnersManager";
+import { TeamManager } from "@/components/admin/TeamManager";
 
 const moduleSchema = z.object({
   title: z.string().trim().min(3, "O título deve ter pelo menos 3 caracteres").max(200),
@@ -183,14 +190,26 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="modules" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
             <TabsTrigger value="modules">
               <BookOpen className="mr-2 h-4 w-4" />
               Módulos
             </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="mr-2 h-4 w-4" />
-              Usuários
+            <TabsTrigger value="lessons">
+              <GraduationCap className="mr-2 h-4 w-4" />
+              Aulas
+            </TabsTrigger>
+            <TabsTrigger value="labs">
+              <Beaker className="mr-2 h-4 w-4" />
+              Labs
+            </TabsTrigger>
+            <TabsTrigger value="partners">
+              <Handshake className="mr-2 h-4 w-4" />
+              Parceiros
+            </TabsTrigger>
+            <TabsTrigger value="team">
+              <UsersRound className="mr-2 h-4 w-4" />
+              Equipe
             </TabsTrigger>
             <TabsTrigger value="analytics">
               <BarChart className="mr-2 h-4 w-4" />
@@ -198,7 +217,7 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="settings">
               <Settings className="mr-2 h-4 w-4" />
-              Configurações
+              Config
             </TabsTrigger>
           </TabsList>
 
@@ -335,14 +354,30 @@ const Admin = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="users">
+          <TabsContent value="lessons">
+            <LessonsManager />
+          </TabsContent>
+
+          <TabsContent value="labs">
             <Card className="p-12 text-center">
-              <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Gerenciamento de Usuários</h3>
-              <p className="text-muted-foreground">
-                Recursos de gerenciamento de usuários em breve
+              <Beaker className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Laboratórios Virtuais</h3>
+              <p className="text-muted-foreground mb-4">
+                Configure laboratórios virtuais para suas aulas
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Para adicionar um laboratório, primeiro crie uma aula do tipo "Laboratório Virtual" na aba Aulas,
+                depois configure os parâmetros específicos aqui.
               </p>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="partners">
+            <PartnersManager />
+          </TabsContent>
+
+          <TabsContent value="team">
+            <TeamManager />
           </TabsContent>
 
           <TabsContent value="analytics">

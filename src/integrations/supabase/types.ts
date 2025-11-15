@@ -47,39 +47,48 @@ export type Database = {
           content_type: string
           content_url: string | null
           created_at: string | null
+          descricao_curta: string | null
           duration_minutes: number | null
           id: string
           module_id: string
           order_index: number | null
           published: boolean | null
+          recursos: Json | null
           title: string
           updated_at: string | null
+          video_url: string | null
         }
         Insert: {
           content_data?: Json | null
           content_type: string
           content_url?: string | null
           created_at?: string | null
+          descricao_curta?: string | null
           duration_minutes?: number | null
           id?: string
           module_id: string
           order_index?: number | null
           published?: boolean | null
+          recursos?: Json | null
           title: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Update: {
           content_data?: Json | null
           content_type?: string
           content_url?: string | null
           created_at?: string | null
+          descricao_curta?: string | null
           duration_minutes?: number | null
           id?: string
           module_id?: string
           order_index?: number | null
           published?: boolean | null
+          recursos?: Json | null
           title?: string
           updated_at?: string | null
+          video_url?: string | null
         }
         Relationships: [
           {
@@ -130,6 +139,36 @@ export type Database = {
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      partners: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          logo_url: string | null
+          name: string
+          ordem: number | null
+          website_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name: string
+          ordem?: number | null
+          website_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          logo_url?: string | null
+          name?: string
+          ordem?: number | null
+          website_url?: string | null
         }
         Relationships: []
       }
@@ -200,6 +239,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      team_members: {
+        Row: {
+          bio: string | null
+          created_at: string | null
+          id: string
+          name: string
+          ordem: number | null
+          photo_url: string | null
+          role: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          ordem?: number | null
+          photo_url?: string | null
+          role: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          ordem?: number | null
+          photo_url?: string | null
+          role?: string
+        }
+        Relationships: []
       }
       user_badges: {
         Row: {
@@ -324,6 +393,41 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      virtual_labs: {
+        Row: {
+          config_data: Json
+          created_at: string | null
+          id: string
+          lab_type: string
+          lesson_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          config_data?: Json
+          created_at?: string | null
+          id?: string
+          lab_type: string
+          lesson_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          config_data?: Json
+          created_at?: string | null
+          id?: string
+          lab_type?: string
+          lesson_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virtual_labs_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

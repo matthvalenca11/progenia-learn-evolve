@@ -51,9 +51,9 @@ const Landing = () => {
                   Começar a Aprender
                 </Button>
               </Link>
-              <Link to="/auth">
+              <Link to="/sobre">
                 <Button size="lg" variant="outline" className="text-lg px-8">
-                  Explorar Módulos
+                  Sobre a ProGenia
                 </Button>
               </Link>
             </div>
