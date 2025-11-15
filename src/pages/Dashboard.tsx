@@ -102,6 +102,31 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const handleStartModule = async (moduleId: string) => {
+    try {
+      // Buscar primeira lição do módulo
+      const { data: lessons, error } = await supabase
+        .from("lessons")
+        .select("id")
+        .eq("module_id", moduleId)
+        .eq("published", true)
+        .order("order_index", { ascending: true })
+        .limit(1);
+
+      if (error) throw error;
+
+      if (lessons && lessons.length > 0) {
+        navigate(`/lesson/${lessons[0].id}`);
+      } else {
+        toast.error("Nenhuma aula disponível neste módulo ainda");
+      }
+    } catch (error: any) {
+      toast.error("Erro ao iniciar módulo", {
+        description: error.message,
+      });
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -255,7 +280,11 @@ const Dashboard = () => {
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                       {module.description}
                     </p>
-                    <Button className="w-full" variant="outline">
+                    <Button 
+                      className="w-full" 
+                      variant="outline"
+                      onClick={() => handleStartModule(module.id)}
+                    >
                       Começar a Aprender
                     </Button>
                   </div>
