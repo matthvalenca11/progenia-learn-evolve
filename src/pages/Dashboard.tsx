@@ -38,7 +38,6 @@ interface Module {
   description: string;
   category: string;
   difficulty_level: string;
-  estimated_hours: number;
   thumbnail_url?: string;
 }
 
@@ -256,9 +255,6 @@ const Dashboard = () => {
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-xs font-medium px-2 py-1 rounded-full bg-secondary/10 text-secondary">
                         {module.category}
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {module.estimated_hours}h
                       </span>
                     </div>
                     <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-smooth">

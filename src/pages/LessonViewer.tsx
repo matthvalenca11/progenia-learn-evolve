@@ -311,12 +311,6 @@ export default function LessonViewer() {
               <CardTitle className="text-lg">Informações</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              {lesson.duration_minutes && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Duração:</span>
-                  <span className="font-medium">{lesson.duration_minutes} min</span>
-                </div>
-              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Tipo:</span>
                 <Badge variant="secondary">
