@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileUploadField } from "@/components/ui/FileUploadField";
 import { 
   Video, 
   FileText, 
@@ -12,9 +13,11 @@ import {
   GripVertical, 
   Trash2,
   ChevronUp,
-  ChevronDown
+  ChevronDown,
+  Upload
 } from "lucide-react";
 import { BlockData } from "@/components/lesson/ContentBlock";
+import { useState } from "react";
 
 interface LessonBlockEditorProps {
   block: BlockData;
@@ -24,6 +27,7 @@ interface LessonBlockEditorProps {
   onMoveDown: () => void;
   canMoveUp: boolean;
   canMoveDown: boolean;
+  onFileChange?: (blockId: string, file: File | null, type: 'video' | 'image') => void;
 }
 
 export const LessonBlockEditor = ({
@@ -33,8 +37,27 @@ export const LessonBlockEditor = ({
   onMoveUp,
   onMoveDown,
   canMoveUp,
-  canMoveDown
+  canMoveDown,
+  onFileChange
 }: LessonBlockEditorProps) => {
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  
+  const handleVideoFileChange = (files: File[]) => {
+    const file = files[0] || null;
+    setVideoFile(file);
+    if (onFileChange) {
+      onFileChange(block.id, file, 'video');
+    }
+  };
+  
+  const handleImageFileChange = (files: File[]) => {
+    const file = files[0] || null;
+    setImageFile(file);
+    if (onFileChange) {
+      onFileChange(block.id, file, 'image');
+    }
+  };
   const getBlockIcon = () => {
     switch (block.type) {
       case 'video':
@@ -80,16 +103,31 @@ export const LessonBlockEditor = ({
         />
       </div>
       <div>
-        <Label htmlFor={`video-url-${block.id}`}>URL do Vídeo *</Label>
-        <Input
-          id={`video-url-${block.id}`}
-          value={block.data.videoUrl || ''}
-          onChange={(e) => updateBlockData({ videoUrl: e.target.value })}
-          placeholder="https://www.youtube.com/watch?v=... ou URL direto"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          Suporta YouTube e links diretos de vídeo
-        </p>
+        <Label>Upload de Vídeo ou URL Externa</Label>
+        <div className="space-y-3">
+          <FileUploadField
+            accept="video/*"
+            onFilesSelected={handleVideoFileChange}
+            label="Fazer upload de vídeo"
+            description="MP4, MOV, AVI - Máx 100MB"
+            maxSize={100}
+          />
+          <div className="text-center text-sm text-muted-foreground">ou</div>
+          <div>
+            <Label htmlFor={`video-url-${block.id}`}>URL Externa (YouTube, Vimeo, etc.)</Label>
+            <Input
+              id={`video-url-${block.id}`}
+              value={block.data.videoUrl || ''}
+              onChange={(e) => updateBlockData({ videoUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+            />
+          </div>
+        </div>
+        {videoFile && (
+          <p className="text-sm text-green-600 mt-2">
+            ✓ Arquivo selecionado: {videoFile.name}
+          </p>
+        )}
       </div>
     </div>
   );
@@ -125,13 +163,19 @@ export const LessonBlockEditor = ({
   const renderImageFields = () => (
     <div className="space-y-4">
       <div>
-        <Label htmlFor={`image-url-${block.id}`}>URL da Imagem *</Label>
-        <Input
-          id={`image-url-${block.id}`}
-          value={block.data.imageUrl || ''}
-          onChange={(e) => updateBlockData({ imageUrl: e.target.value })}
-          placeholder="https://..."
+        <Label>Upload de Imagem *</Label>
+        <FileUploadField
+          accept="image/*"
+          onFilesSelected={handleImageFileChange}
+          label="Fazer upload de imagem"
+          description="JPG, PNG, WEBP - Máx 10MB"
+          maxSize={10}
         />
+        {imageFile && (
+          <p className="text-sm text-green-600 mt-2">
+            ✓ Arquivo selecionado: {imageFile.name}
+          </p>
+        )}
       </div>
       <div>
         <Label htmlFor={`image-caption-${block.id}`}>Legenda (opcional)</Label>

@@ -10,11 +10,13 @@ export interface BlockData {
     // Video
     videoUrl?: string;
     videoTitle?: string;
+    videoStoragePath?: string;
     // Text
     content?: string;
     title?: string;
     // Image
     imageUrl?: string;
+    imageStoragePath?: string;
     caption?: string;
     // Lab
     labType?: string;

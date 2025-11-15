@@ -52,6 +52,45 @@ export default function LessonViewer() {
   const loadLesson = async () => {
     try {
       const data = await lessonService.getLessonById(lessonId!);
+      
+      // Processar blocos se for aula composta
+      if (data.content_type === "composto" && data.content_data) {
+        const contentData = data.content_data as { blocks?: BlockData[] };
+        if (contentData.blocks) {
+          const blocksWithUrls = await Promise.all(
+            contentData.blocks.map(async (block: BlockData) => {
+              const updatedData = { ...block.data };
+              
+              // Gerar URL assinada para vídeo do storage
+              if (block.data.videoStoragePath) {
+                const url = await storageService.getSignedUrl(
+                  "lesson-videos",
+                  block.data.videoStoragePath,
+                  3600
+                );
+                updatedData.videoUrl = url;
+              }
+              
+              // Gerar URL assinada para imagem do storage
+              if (block.data.imageStoragePath) {
+                const url = await storageService.getSignedUrl(
+                  "lesson-assets",
+                  block.data.imageStoragePath,
+                  3600
+                );
+                updatedData.imageUrl = url;
+              }
+              
+              return {
+                ...block,
+                data: updatedData
+              };
+            })
+          );
+          data.content_data = { blocks: blocksWithUrls };
+        }
+      }
+      
       setLesson(data);
 
       // Se tem vídeo no storage, gerar URL assinada
@@ -242,10 +281,10 @@ export default function LessonViewer() {
           )}
           
           {/* Aula Composta com Blocos */}
-          {lesson.content_type === "composto" && lesson.content_data?.blocks && (
+          {lesson.content_type === "composto" && lesson.content_data && (
             <Card>
               <CardContent className="pt-6 space-y-8">
-                {(lesson.content_data.blocks as BlockData[])
+                {((lesson.content_data as { blocks?: BlockData[] }).blocks || [])
                   .sort((a, b) => a.order - b.order)
                   .map((block) => (
                     <ContentBlock key={block.id} block={block} />
