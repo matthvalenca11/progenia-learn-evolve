@@ -8,7 +8,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { GraduationCap, Trophy, Clock, BookOpen, LogOut, Zap, Award, TrendingUp, UserPlus, UserMinus } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
-import AITutor from "@/components/AITutor";
 import { enrollmentService } from "@/services/enrollmentService";
 interface UserProfile {
   full_name: string;
@@ -354,8 +353,6 @@ const Dashboard = () => {
             </div>}
         </div>
       </div>
-
-      <AITutor />
     </div>;
 };
 export default Dashboard;
