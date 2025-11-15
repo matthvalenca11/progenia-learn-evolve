@@ -204,14 +204,15 @@ const Sobre = () => {
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             {[
-              { icon: "👨‍⚕️", title: "Fisioterapeutas", count: "5.000+" },
-              { icon: "👩‍🎓", title: "Estudantes", count: "2.000+" },
-              { icon: "🏥", title: "Profissionais", count: "3.000+" }
+              { icon: "👨‍⚕️", title: "Fisioterapeutas no Brasil", count: "300.000+", subtitle: "Registrados no COFFITO" },
+              { icon: "🎓", title: "Cursos de Graduação", count: "600+", subtitle: "Fisioterapia, Fonoaudiologia e TO" },
+              { icon: "🏥", title: "Terapeutas Ocupacionais", count: "20.000+", subtitle: "Profissionais ativos" }
             ].map((audience, i) => (
-              <Card key={i} className="p-6 text-center">
+              <Card key={i} className="p-6 text-center hover:shadow-lg transition-shadow">
                 <div className="text-5xl mb-3">{audience.icon}</div>
-                <h3 className="text-xl font-semibold mb-2">{audience.title}</h3>
-                <p className="text-3xl font-bold text-primary">{audience.count}</p>
+                <h3 className="text-lg font-semibold mb-2">{audience.title}</h3>
+                <p className="text-3xl font-bold text-primary mb-1">{audience.count}</p>
+                <p className="text-sm text-muted-foreground">{audience.subtitle}</p>
               </Card>
             ))}
           </div>
@@ -223,9 +224,9 @@ const Sobre = () => {
         <section className="py-16 px-4">
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Parceiros & Apoiadores</h2>
+              <h2 className="text-3xl font-bold mb-4">Apoiadores do Projeto</h2>
               <p className="text-lg text-muted-foreground">
-                Orgulhosos de contar com o apoio de instituições de excelência
+                Instituições que acreditam na democratização do conhecimento científico em saúde
               </p>
             </div>
 
@@ -289,38 +290,6 @@ const Sobre = () => {
         </section>
       )}
 
-      {/* Visão & Roadmap */}
-      <section className="py-16 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Visão de Futuro</h2>
-            <p className="text-lg text-muted-foreground">
-              Estamos constantemente evoluindo e expandindo nossa plataforma
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {[
-              { title: "Laboratórios Avançados", desc: "Simulações 3D de equipamentos e procedimentos", status: "Em breve" },
-              { title: "Módulos de Imagem Médica", desc: "Ultrassom, TC e RM com casos reais", status: "2024" },
-              { title: "Personalização por IA", desc: "Trilhas adaptativas baseadas no seu perfil", status: "2024" },
-              { title: "Certificações Internacionais", desc: "Reconhecimento global do aprendizado", status: "2025" }
-            ].map((item, i) => (
-              <Card key={i} className="p-6 flex items-center gap-6">
-                <div className="text-4xl font-bold text-primary/20">{i + 1}</div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-semibold mb-1">{item.title}</h3>
-                  <p className="text-muted-foreground">{item.desc}</p>
-                </div>
-                <div className="px-4 py-2 rounded-full bg-secondary/20 text-secondary font-medium text-sm">
-                  {item.status}
-                </div>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Final CTA */}
       <section className="py-20 px-4 bg-gradient-to-br from-primary/10 via-secondary/10 to-primary/10">
         <div className="container mx-auto max-w-4xl text-center">
@@ -328,7 +297,7 @@ const Sobre = () => {
             Pronto para Transformar Seu Aprendizado?
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Junte-se a milhares de profissionais que já estão evoluindo com a ProGenia
+            Faça parte da nova geração de profissionais que dominam a ciência por trás da tecnologia médica
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Button size="lg" className="gradient-accent text-white" onClick={() => navigate("/auth")}>
