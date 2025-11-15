@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileUploadField } from "@/components/ui/FileUploadField";
 import { storageService } from "@/services/storageService";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Plus, Save, Trash2, Users, Edit2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Plus, Edit2, Trash2, Save, X, Users } from "lucide-react";
 
 interface TeamMember {
   id: string;
@@ -17,310 +16,301 @@ interface TeamMember {
   role: string;
   bio: string | null;
   photo_url: string | null;
-  ordem: number;
+  ordem: number | null;
 }
 
-export const TeamManager = () => {
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [editingMember, setEditingMember] = useState<Partial<TeamMember>>({
+export function TeamManager() {
+  const [members, setMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
     name: "",
     role: "",
     bio: "",
     photo_url: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    loadTeam();
+    loadMembers();
   }, []);
 
-  const loadTeam = async () => {
-    const { data } = await supabase
-      .from("team_members")
-      .select("*")
-      .order("ordem");
-    if (data) setTeam(data);
+  const loadMembers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("team_members")
+        .select("*")
+        .order("ordem", { ascending: true });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar equipe",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Por favor, selecione uma imagem",
+  const startEdit = (member?: TeamMember) => {
+    if (member) {
+      setEditing(member.id);
+      setFormData({
+        name: member.name,
+        role: member.role,
+        bio: member.bio || "",
+        photo_url: member.photo_url || "",
       });
-      return;
+    } else {
+      setEditing("new");
+      setFormData({
+        name: "",
+        role: "",
+        bio: "",
+        photo_url: "",
+      });
     }
+    setSelectedFile(null);
+  };
 
-    if (file.size > 2 * 1024 * 1024) {
+  const cancelEdit = () => {
+    setEditing(null);
+    setFormData({
+      name: "",
+      role: "",
+      bio: "",
+      photo_url: "",
+    });
+    setSelectedFile(null);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim() || !formData.role.trim()) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "A imagem deve ter no máximo 2MB",
+        title: "Campos obrigatórios",
+        description: "Por favor, informe nome e cargo",
       });
       return;
     }
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let photoUrl = formData.photo_url;
 
-      const { error: uploadError } = await supabase.storage
-        .from('team-photos')
-        .upload(filePath, file);
+      if (selectedFile) {
+        const fileName = storageService.generateUniqueFileName(selectedFile.name);
+        const result = await storageService.uploadFile({
+          bucket: "team-photos",
+          path: fileName,
+          file: selectedFile,
+        });
+        photoUrl = storageService.getPublicUrl("team-photos", result.path);
+      }
 
-      if (uploadError) throw uploadError;
+      const memberData = {
+        name: formData.name.trim(),
+        role: formData.role.trim(),
+        bio: formData.bio.trim() || null,
+        photo_url: photoUrl || null,
+      };
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('team-photos')
-        .getPublicUrl(filePath);
+      if (editing === "new") {
+        const { error } = await supabase
+          .from("team_members")
+          .insert(memberData);
+        if (error) throw error;
+        toast({
+          title: "Membro adicionado",
+          description: "O membro da equipe foi adicionado com sucesso",
+        });
+      } else {
+        const { error } = await supabase
+          .from("team_members")
+          .update(memberData)
+          .eq("id", editing);
+        if (error) throw error;
+        toast({
+          title: "Membro atualizado",
+          description: "As alterações foram salvas com sucesso",
+        });
+      }
 
-      setEditingMember({ ...editingMember, photo_url: publicUrl });
-      toast({
-        title: "Sucesso",
-        description: "Foto enviada com sucesso!",
-      });
-    } catch (error) {
-      console.error("Erro no upload:", error);
+      loadMembers();
+      cancelEdit();
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Erro ao enviar foto",
+        title: "Erro ao salvar",
+        description: error.message,
       });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!editingMember.name || !editingMember.role) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Nome e função são obrigatórios",
-      });
-      return;
-    }
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Tem certeza que deseja remover "${name}" da equipe?`)) return;
 
     try {
-      if (editingMember.id) {
-        const { error } = await supabase
-          .from("team_members")
-          .update({
-            name: editingMember.name,
-            role: editingMember.role,
-            bio: editingMember.bio,
-            photo_url: editingMember.photo_url,
-          })
-          .eq("id", editingMember.id);
-        if (error) throw error;
-        toast({
-          title: "Sucesso",
-          description: "Membro atualizado!",
-        });
-      } else {
-        const { error } = await supabase.from("team_members").insert({
-          name: editingMember.name,
-          role: editingMember.role,
-          bio: editingMember.bio,
-          photo_url: editingMember.photo_url,
-          ordem: team.length,
-        });
-        if (error) throw error;
-        toast({
-          title: "Sucesso",
-          description: "Membro adicionado!",
-        });
-      }
+      const { error } = await supabase
+        .from("team_members")
+        .delete()
+        .eq("id", id);
 
-      setEditingMember({ name: "", role: "", bio: "", photo_url: "" });
-      loadTeam();
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao salvar membro",
-      });
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este membro?")) return;
-    
-    try {
-      const { error } = await supabase.from("team_members").delete().eq("id", id);
       if (error) throw error;
-      toast.success("Membro excluído");
-      loadTeam();
-    } catch (error) {
-      toast.error("Erro ao excluir membro");
+
+      toast({
+        title: "Membro removido",
+        description: "O membro foi removido da equipe com sucesso",
+      });
+      loadMembers();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao remover",
+        description: error.message,
+      });
     }
   };
+
+  if (loading) {
+    return <div className="text-center py-8">Carregando...</div>;
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          {editingMember.id ? "Editar Membro" : "Adicionar Membro da Equipe"}
-        </h3>
-
-        <div className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label>Nome Completo</Label>
-              <Input
-                value={editingMember.name}
-                onChange={(e) => setEditingMember({ ...editingMember, name: e.target.value })}
-                placeholder="ex: Dr. João Silva"
-              />
-            </div>
-
-            <div>
-              <Label>Função</Label>
-              <Input
-                value={editingMember.role}
-                onChange={(e) => setEditingMember({ ...editingMember, role: e.target.value })}
-                placeholder="ex: Físico Médico"
-              />
-            </div>
-          </div>
-
-          <div>
-            <Label>Foto do Membro</Label>
-            <div className="space-y-2">
-              {editingMember.photo_url && (
-                <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                  <img 
-                    src={editingMember.photo_url} 
-                    alt="Preview" 
-                    className="h-20 w-20 object-cover rounded-full"
-                  />
-                  <div className="flex-1 text-sm text-muted-foreground truncate">
-                    {editingMember.photo_url}
-                  </div>
-                </div>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => document.getElementById('team-photo-upload')?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Fazer Upload da Foto
-                  </>
-                )}
-              </Button>
-              <input
-                id="team-photo-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <p className="text-xs text-muted-foreground">
-                Formatos aceitos: JPG, PNG (máximo 2MB)
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <Label>Biografia</Label>
-            <Textarea
-              value={editingMember.bio || ""}
-              onChange={(e) => setEditingMember({ ...editingMember, bio: e.target.value })}
-              placeholder="Breve descrição profissional"
-              rows={4}
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleSave} className="flex-1">
-              <Save className="mr-2 h-4 w-4" />
-              {editingMember.id ? "Atualizar" : "Adicionar"}
-            </Button>
-            {editingMember.id && (
-              <Button
-                variant="outline"
-                onClick={() => setEditingMember({ name: "", role: "", bio: "", photo_url: "" })}
-              >
-                Cancelar
-              </Button>
-            )}
-          </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Gerenciar Equipe
+          </CardTitle>
+          <Button onClick={() => startEdit()} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Membro
+          </Button>
         </div>
-      </Card>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {editing && (
+          <Card className="border-primary">
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nome *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nome completo"
+                />
+              </div>
 
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Equipe Cadastrada ({team.length})</h3>
-        {team.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum Membro Ainda</h3>
-            <p className="text-muted-foreground">
-              Adicione membros da equipe ProGenia
-            </p>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Cargo *</label>
+                <Input
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="Ex: Fundador, Fisioterapeuta, Coordenador"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mini Bio</label>
+                <Textarea
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                  placeholder="Breve descrição sobre o membro"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Foto</label>
+                <FileUploadField
+                  accept="image/*"
+                  onFilesSelected={(files) => setSelectedFile(files[0])}
+                  label="Selecione a foto do membro"
+                  description="Formatos: JPG, PNG. Ideal: quadrada."
+                  maxSize={5}
+                />
+                {formData.photo_url && !selectedFile && (
+                  <div className="mt-2 flex justify-center">
+                    <Avatar className="h-24 w-24">
+                      <AvatarImage src={formData.photo_url} />
+                      <AvatarFallback>
+                        {formData.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleSave} disabled={uploading} className="flex-1">
+                  <Save className="h-4 w-4 mr-2" />
+                  {uploading ? "Salvando..." : "Salvar"}
+                </Button>
+                <Button onClick={cancelEdit} variant="outline" disabled={uploading}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
           </Card>
+        )}
+
+        {members.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum membro da equipe cadastrado ainda
+          </div>
         ) : (
-          <div className="grid gap-4">
-            {team.map((member) => (
-              <Card key={member.id} className="p-4">
-                <div className="flex items-center gap-4">
-                  {member.photo_url ? (
-                    <img 
-                      src={member.photo_url} 
-                      alt={member.name}
-                      className="h-20 w-20 object-cover rounded-full"
-                    />
-                  ) : (
-                    <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center">
-                      <UserCircle className="h-12 w-12 text-muted-foreground" />
+          <div className="grid gap-3">
+            {members.map((member) => (
+              <Card key={member.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="h-16 w-16 flex-shrink-0">
+                      <AvatarImage src={member.photo_url || undefined} />
+                      <AvatarFallback>
+                        {member.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium">{member.name}</h4>
+                      <p className="text-sm text-primary">{member.role}</p>
+                      {member.bio && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                          {member.bio}
+                        </p>
+                      )}
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{member.name}</h4>
-                    <p className="text-sm text-secondary">{member.role}</p>
-                    {member.bio && (
-                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{member.bio}</p>
-                    )}
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(member)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(member.id, member.name)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingMember(member)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(member.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                </CardContent>
               </Card>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-};
+}
