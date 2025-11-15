@@ -328,7 +328,8 @@ export default function LessonViewer() {
             <>
               {quizId ? (
                 <QuizTaker 
-                  quizId={quizId} 
+                  quizId={quizId}
+                  moduleId={lesson.module_id}
                   onComplete={() => {
                     loadProgress();
                     handleComplete();
