@@ -314,11 +314,19 @@ export function LessonsManager() {
             titulo: quizData.titulo || formData.title,
           });
         } else {
-          // Criar novo quiz
+          // Criar novo quiz - garantir valores padrão
           const newQuiz = await quizService.createQuiz({
             aula_id: lessonId,
-            ...quizData,
             titulo: quizData.titulo || formData.title,
+            descricao: quizData.descricao || null,
+            nota_minima_aprovacao: quizData.nota_minima_aprovacao || 70,
+            tentativas_maximas: quizData.tentativas_maximas || 3,
+            tempo_limite_segundos: quizData.tempo_limite_segundos || null,
+            modo_de_navegacao: quizData.modo_de_navegacao || 'livre',
+            aleatorizar_ordem_perguntas: quizData.aleatorizar_ordem_perguntas ?? false,
+            aleatorizar_ordem_alternativas: quizData.aleatorizar_ordem_alternativas ?? true,
+            feedback_imediato: quizData.feedback_imediato ?? false,
+            ativo: true,
           });
           quizId = newQuiz.id;
         }
