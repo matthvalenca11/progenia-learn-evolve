@@ -14,6 +14,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { QuizQuestionsEditor } from "@/components/admin/QuizQuestionsEditor";
+import { LessonBlockEditor } from "@/components/admin/LessonBlockEditor";
+import { LessonPreview } from "@/components/admin/LessonPreview";
+import { BlockData } from "@/components/lesson/ContentBlock";
 import { toast } from "@/hooks/use-toast";
 import { 
   GraduationCap, 
@@ -27,7 +30,9 @@ import {
   FlaskConical,
   ClipboardCheck,
   Eye,
-  EyeOff
+  EyeOff,
+  Image as ImageIcon,
+  Layers
 } from "lucide-react";
 
 export function LessonsManager() {
@@ -37,7 +42,7 @@ export function LessonsManager() {
   const [editing, setEditing] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
-    content_type: "video",
+    content_type: "composto",
     descricao_curta: "",
     duration_minutes: 0,
     video_external_url: "",
@@ -47,6 +52,10 @@ export function LessonsManager() {
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [assetFiles, setAssetFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
+  
+  // Estados para Blocos de Conteúdo
+  const [contentBlocks, setContentBlocks] = useState<BlockData[]>([]);
+  const [showPreview, setShowPreview] = useState(false);
   
   // Estados para Quiz
   const [quizData, setQuizData] = useState({
@@ -115,6 +124,13 @@ export function LessonsManager() {
         published: lesson.published || false,
       });
       
+      // Carregar blocos de conteúdo se existirem
+      if (lesson.content_data && Array.isArray(lesson.content_data.blocks)) {
+        setContentBlocks(lesson.content_data.blocks);
+      } else {
+        setContentBlocks([]);
+      }
+      
       // Carregar dados do quiz se for tipo quiz
       if (lesson.content_type === "quiz") {
         const quizzes = await quizService.getQuizzesByLesson(lesson.id);
@@ -141,13 +157,14 @@ export function LessonsManager() {
       setEditing("new");
       setFormData({
         title: "",
-        content_type: "video",
+        content_type: "composto",
         descricao_curta: "",
         duration_minutes: 0,
         video_external_url: "",
         conteudo_rich_text: "",
         published: false,
       });
+      setContentBlocks([]);
       setQuizData({
         titulo: "",
         descricao: "",
@@ -170,13 +187,14 @@ export function LessonsManager() {
     setEditing(null);
     setFormData({
       title: "",
-      content_type: "video",
+      content_type: "composto",
       descricao_curta: "",
       duration_minutes: 0,
       video_external_url: "",
       conteudo_rich_text: "",
       published: false,
     });
+    setContentBlocks([]);
     setQuizData({
       titulo: "",
       descricao: "",
@@ -192,6 +210,61 @@ export function LessonsManager() {
     setPerguntas([]);
     setVideoFile(null);
     setAssetFiles([]);
+  };
+  
+  // Funções para gerenciar blocos
+  const addBlock = (type: BlockData['type']) => {
+    const newBlock: BlockData = {
+      id: `block-${Date.now()}`,
+      type,
+      order: contentBlocks.length,
+      data: {}
+    };
+    setContentBlocks([...contentBlocks, newBlock]);
+  };
+  
+  const updateBlock = (id: string, updatedBlock: BlockData) => {
+    setContentBlocks(contentBlocks.map(block => 
+      block.id === id ? updatedBlock : block
+    ));
+  };
+  
+  const deleteBlock = (id: string) => {
+    const filtered = contentBlocks.filter(block => block.id !== id);
+    // Reordenar
+    const reordered = filtered.map((block, index) => ({
+      ...block,
+      order: index
+    }));
+    setContentBlocks(reordered);
+  };
+  
+  const moveBlockUp = (id: string) => {
+    const index = contentBlocks.findIndex(block => block.id === id);
+    if (index > 0) {
+      const newBlocks = [...contentBlocks];
+      [newBlocks[index - 1], newBlocks[index]] = [newBlocks[index], newBlocks[index - 1]];
+      // Atualizar orders
+      const reordered = newBlocks.map((block, idx) => ({
+        ...block,
+        order: idx
+      }));
+      setContentBlocks(reordered);
+    }
+  };
+  
+  const moveBlockDown = (id: string) => {
+    const index = contentBlocks.findIndex(block => block.id === id);
+    if (index < contentBlocks.length - 1) {
+      const newBlocks = [...contentBlocks];
+      [newBlocks[index], newBlocks[index + 1]] = [newBlocks[index + 1], newBlocks[index]];
+      // Atualizar orders
+      const reordered = newBlocks.map((block, idx) => ({
+        ...block,
+        order: idx
+      }));
+      setContentBlocks(reordered);
+    }
   };
 
   const handleSave = async () => {
@@ -234,6 +307,11 @@ export function LessonsManager() {
         duration_minutes: formData.duration_minutes || null,
         published: formData.published,
       };
+      
+      // Salvar blocos de conteúdo se tipo for "composto"
+      if (formData.content_type === "composto") {
+        lessonData.content_data = { blocks: contentBlocks };
+      }
 
       if (formData.content_type === "video") {
         lessonData.video_external_url = formData.video_external_url.trim() || null;
@@ -439,6 +517,8 @@ export function LessonsManager() {
 
   const getContentTypeIcon = (type: string) => {
     switch (type) {
+      case "composto":
+        return <Layers className="h-4 w-4" />;
       case "video":
         return <Video className="h-4 w-4" />;
       case "artigo":
@@ -454,6 +534,7 @@ export function LessonsManager() {
 
   const getContentTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
+      composto: "Aula Composta",
       video: "Vídeo",
       artigo: "Artigo",
       quiz: "Quiz",
@@ -514,6 +595,7 @@ export function LessonsManager() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="composto">Aula Composta (Blocos)</SelectItem>
                       <SelectItem value="video">Vídeo</SelectItem>
                       <SelectItem value="artigo">Artigo</SelectItem>
                       <SelectItem value="quiz">Quiz</SelectItem>
@@ -542,6 +624,90 @@ export function LessonsManager() {
                   min={0}
                 />
               </div>
+
+              {formData.content_type === "composto" && (
+                <>
+                  <Separator />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-lg font-semibold">Blocos de Conteúdo</h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPreview(true)}
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Preview
+                      </Button>
+                    </div>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addBlock('video')}
+                      >
+                        <Video className="h-4 w-4 mr-2" />
+                        Adicionar Vídeo
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addBlock('text')}
+                      >
+                        <FileText className="h-4 w-4 mr-2" />
+                        Adicionar Texto
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addBlock('image')}
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Adicionar Imagem
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => addBlock('lab')}
+                      >
+                        <FlaskConical className="h-4 w-4 mr-2" />
+                        Adicionar Lab
+                      </Button>
+                    </div>
+
+                    {contentBlocks.length === 0 ? (
+                      <Card className="p-8 text-center">
+                        <p className="text-muted-foreground">
+                          Nenhum bloco adicionado. Clique nos botões acima para adicionar conteúdo.
+                        </p>
+                      </Card>
+                    ) : (
+                      <div className="space-y-4">
+                        {contentBlocks
+                          .sort((a, b) => a.order - b.order)
+                          .map((block, index) => (
+                            <LessonBlockEditor
+                              key={block.id}
+                              block={block}
+                              onChange={(updated) => updateBlock(block.id, updated)}
+                              onDelete={() => deleteBlock(block.id)}
+                              onMoveUp={() => moveBlockUp(block.id)}
+                              onMoveDown={() => moveBlockDown(block.id)}
+                              canMoveUp={index > 0}
+                              canMoveDown={index < contentBlocks.length - 1}
+                            />
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
 
               {formData.content_type === "quiz" && (
                 <>
@@ -737,6 +903,15 @@ export function LessonsManager() {
             </CardContent>
           </Card>
         )}
+        
+        {/* Preview Modal */}
+        <LessonPreview
+          open={showPreview}
+          onOpenChange={setShowPreview}
+          lessonTitle={formData.title}
+          lessonDescription={formData.descricao_curta}
+          blocks={contentBlocks}
+        />
 
         {!selectedModuleId ? (
           <div className="text-center py-8 text-muted-foreground">
