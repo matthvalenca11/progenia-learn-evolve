@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import logo from "@/assets/logo.png";
+import { enrollmentService } from "@/services/enrollmentService";
 
 interface Lesson {
   id: string;
@@ -43,6 +44,7 @@ export default function ModuleViewer() {
   const [module, setModule] = useState<any>(null);
   const [lessons, setLessons] = useState<LessonWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEnrolled, setIsEnrolled] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -66,6 +68,15 @@ export default function ModuleViewer() {
 
       if (moduleError) throw moduleError;
       setModule(moduleData);
+
+      // Check if user is enrolled
+      const enrolled = await enrollmentService.isEnrolled(user!.id, moduleId);
+      setIsEnrolled(enrolled);
+
+      if (!enrolled) {
+        setLoading(false);
+        return;
+      }
 
       // Carregar aulas do módulo
       const { data: lessonsData, error: lessonsError } = await supabase
@@ -183,6 +194,40 @@ export default function ModuleViewer() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Módulo não encontrado</p>
+      </div>
+    );
+  }
+
+  if (!isEnrolled) {
+    return (
+      <div className="min-h-screen bg-background">
+        <nav className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="ProGenia" className="h-10" />
+            </div>
+            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar ao Dashboard
+            </Button>
+          </div>
+        </nav>
+        
+        <div className="container mx-auto px-4 py-16">
+          <Card className="max-w-2xl mx-auto text-center p-12">
+            <Lock className="mx-auto h-20 w-20 text-muted-foreground mb-6" />
+            <h2 className="text-3xl font-bold mb-4">{module.title}</h2>
+            <p className="text-muted-foreground mb-6">{module.description}</p>
+            <div className="space-y-4">
+              <p className="text-lg font-semibold">
+                Você precisa se matricular neste módulo para acessar o conteúdo.
+              </p>
+              <Button onClick={() => navigate("/dashboard")} size="lg">
+                Voltar ao Dashboard para Matricular-se
+              </Button>
+            </div>
+          </Card>
+        </div>
       </div>
     );
   }

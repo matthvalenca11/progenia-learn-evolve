@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { GraduationCap, Trophy, Clock, BookOpen, LogOut, Zap, Award, TrendingUp } from "lucide-react";
+import { GraduationCap, Trophy, Clock, BookOpen, LogOut, Zap, Award, TrendingUp, UserPlus, UserMinus } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
 import AITutor from "@/components/AITutor";
+import { enrollmentService } from "@/services/enrollmentService";
 interface UserProfile {
   full_name: string;
   institution?: string;
@@ -35,6 +36,7 @@ const Dashboard = () => {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [modulesCompleted, setModulesCompleted] = useState<number>(0);
+  const [enrolledModules, setEnrolledModules] = useState<Set<string>>(new Set());
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -73,6 +75,10 @@ const Dashboard = () => {
         .order("order_index");
       if (modulesData) {
         setModules(modulesData);
+        
+        // Fetch user enrollments
+        const enrollments = await enrollmentService.getUserEnrollments(session.user.id);
+        setEnrolledModules(new Set(enrollments.map(e => e.module_id)));
 
         // Compute modules completed based on lesson progress
         if (modulesData.length > 0) {
@@ -132,7 +138,57 @@ const Dashboard = () => {
     navigate("/");
   };
   const handleStartModule = async (moduleId: string) => {
+    if (!enrolledModules.has(moduleId)) {
+      toast.error("Matrícula necessária", {
+        description: "Você precisa se matricular neste módulo antes de começar.",
+      });
+      return;
+    }
     navigate(`/module/${moduleId}`);
+  };
+
+  const handleEnroll = async (moduleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await enrollmentService.enrollInModule(session.user.id, moduleId);
+      setEnrolledModules(prev => new Set([...prev, moduleId]));
+      
+      toast.success("Matrícula realizada!", {
+        description: "Você foi matriculado neste módulo com sucesso.",
+      });
+    } catch (error) {
+      console.error("Erro ao matricular:", error);
+      toast.error("Erro", {
+        description: "Não foi possível realizar a matrícula.",
+      });
+    }
+  };
+
+  const handleUnenroll = async (moduleId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      await enrollmentService.unenrollFromModule(session.user.id, moduleId);
+      setEnrolledModules(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(moduleId);
+        return newSet;
+      });
+      
+      toast.success("Matrícula cancelada", {
+        description: "Você foi desmatriculado deste módulo.",
+      });
+    } catch (error) {
+      console.error("Erro ao desmatricular:", error);
+      toast.error("Erro", {
+        description: "Não foi possível cancelar a matrícula.",
+      });
+    }
   };
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
@@ -264,9 +320,34 @@ const Dashboard = () => {
                     <p className="text-muted-foreground text-sm mb-4 line-clamp-2">
                       {module.description}
                     </p>
-                    <Button className="w-full" variant="outline" onClick={() => handleStartModule(module.id)}>
-                      Começar a Aprender
-                    </Button>
+                    {enrolledModules.has(module.id) ? (
+                      <div className="space-y-2">
+                        <Button 
+                          className="w-full" 
+                          variant="outline" 
+                          onClick={() => handleStartModule(module.id)}
+                        >
+                          <BookOpen className="mr-2 h-4 w-4" />
+                          Continuar Módulo
+                        </Button>
+                        <Button 
+                          className="w-full" 
+                          variant="ghost" 
+                          onClick={(e) => handleUnenroll(module.id, e)}
+                        >
+                          <UserMinus className="mr-2 h-4 w-4" />
+                          Cancelar Matrícula
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        className="w-full" 
+                        onClick={(e) => handleEnroll(module.id, e)}
+                      >
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Matricular-se
+                      </Button>
+                    )}
                   </div>
                 </Card>)}
             </div>}
