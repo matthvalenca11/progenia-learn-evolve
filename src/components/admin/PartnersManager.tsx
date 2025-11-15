@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Save, Trash2, Handshake, Upload, Image as ImageIcon } from "lucide-react";
-import { toast } from "sonner";
+import { FileUploadField } from "@/components/ui/FileUploadField";
+import { storageService } from "@/services/storageService";
+import { Plus, Save, Trash2, Handshake, Edit2, X } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
 interface Partner {
   id: string;
@@ -44,12 +47,20 @@ export const PartnersManager = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      toast.error("Por favor, selecione uma imagem");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Por favor, selecione uma imagem",
+      });
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "A imagem deve ter no máximo 2MB",
+      });
       return;
     }
 
@@ -70,10 +81,17 @@ export const PartnersManager = () => {
         .getPublicUrl(filePath);
 
       setEditingPartner({ ...editingPartner, logo_url: publicUrl });
-      toast.success("Logo enviado com sucesso!");
+      toast({
+        title: "Sucesso",
+        description: "Logo enviado com sucesso!",
+      });
     } catch (error) {
       console.error("Erro no upload:", error);
-      toast.error("Erro ao enviar logo");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao enviar logo",
+      });
     } finally {
       setUploading(false);
     }
@@ -81,7 +99,11 @@ export const PartnersManager = () => {
 
   const handleSave = async () => {
     if (!editingPartner.name) {
-      toast.error("Nome é obrigatório");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Nome é obrigatório",
+      });
       return;
     }
 
@@ -97,7 +119,10 @@ export const PartnersManager = () => {
           })
           .eq("id", editingPartner.id);
         if (error) throw error;
-        toast.success("Parceiro atualizado!");
+        toast({
+          title: "Sucesso",
+          description: "Parceiro atualizado!",
+        });
       } else {
         const { error } = await supabase.from("partners").insert({
           name: editingPartner.name,
@@ -107,14 +132,21 @@ export const PartnersManager = () => {
           ordem: partners.length,
         });
         if (error) throw error;
-        toast.success("Parceiro adicionado!");
+        toast({
+          title: "Sucesso",
+          description: "Parceiro adicionado!",
+        });
       }
 
       setEditingPartner({ name: "", logo_url: "", description: "", website_url: "" });
       loadPartners();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast.error("Erro ao salvar parceiro");
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Erro ao salvar parceiro",
+      });
     }
   };
 

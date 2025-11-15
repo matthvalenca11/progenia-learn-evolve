@@ -142,6 +142,7 @@ export type Database = {
       }
       lessons: {
         Row: {
+          assets: Json | null
           content_data: Json | null
           content_type: string
           content_url: string | null
@@ -155,9 +156,12 @@ export type Database = {
           recursos: Json | null
           title: string
           updated_at: string | null
+          video_external_url: string | null
+          video_storage_path: string | null
           video_url: string | null
         }
         Insert: {
+          assets?: Json | null
           content_data?: Json | null
           content_type: string
           content_url?: string | null
@@ -171,9 +175,12 @@ export type Database = {
           recursos?: Json | null
           title: string
           updated_at?: string | null
+          video_external_url?: string | null
+          video_storage_path?: string | null
           video_url?: string | null
         }
         Update: {
+          assets?: Json | null
           content_data?: Json | null
           content_type?: string
           content_url?: string | null
@@ -187,6 +194,8 @@ export type Database = {
           recursos?: Json | null
           title?: string
           updated_at?: string | null
+          video_external_url?: string | null
+          video_storage_path?: string | null
           video_url?: string | null
         }
         Relationships: [
