@@ -56,6 +56,7 @@ export function LessonsManager() {
   // Estados para Blocos de Conteúdo
   const [contentBlocks, setContentBlocks] = useState<BlockData[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  const [blockFiles, setBlockFiles] = useState<Map<string, { video?: File; image?: File }>>(new Map());
   
   // Estados para Quiz
   const [quizData, setQuizData] = useState({
@@ -195,6 +196,7 @@ export function LessonsManager() {
       published: false,
     });
     setContentBlocks([]);
+    setBlockFiles(new Map());
     setQuizData({
       titulo: "",
       descricao: "",
@@ -221,6 +223,27 @@ export function LessonsManager() {
       data: {}
     };
     setContentBlocks([...contentBlocks, newBlock]);
+  };
+  
+  const handleBlockFileChange = (blockId: string, file: File | null, type: 'video' | 'image') => {
+    setBlockFiles(prev => {
+      const newMap = new Map(prev);
+      const blockFiles = newMap.get(blockId) || {};
+      
+      if (type === 'video') {
+        blockFiles.video = file || undefined;
+      } else {
+        blockFiles.image = file || undefined;
+      }
+      
+      if (blockFiles.video || blockFiles.image) {
+        newMap.set(blockId, blockFiles);
+      } else {
+        newMap.delete(blockId);
+      }
+      
+      return newMap;
+    });
   };
   
   const updateBlock = (id: string, updatedBlock: BlockData) => {
@@ -310,7 +333,7 @@ export function LessonsManager() {
       
       // Salvar blocos de conteúdo se tipo for "composto"
       if (formData.content_type === "composto") {
-        lessonData.content_data = { blocks: contentBlocks };
+        lessonData.content_data = { blocks: contentBlocks } as any;
       }
 
       if (formData.content_type === "video") {
@@ -373,6 +396,58 @@ export function LessonsManager() {
           updateData.assets = assetsData;
         }
         await lessonService.updateLesson(lessonId, updateData);
+      }
+      
+      // Upload de arquivos dos blocos se for aula composta
+      if (formData.content_type === "composto" && blockFiles.size > 0) {
+        const updatedBlocks = await Promise.all(
+          contentBlocks.map(async (block) => {
+            const files = blockFiles.get(block.id);
+            if (!files) return block;
+            
+            const updatedData = { ...block.data };
+            
+            // Upload de vídeo do bloco
+            if (files.video && block.type === 'video') {
+              const fileName = storageService.generateUniqueFileName(files.video.name);
+              const path = `${selectedModuleId}/${lessonId}/blocks/${fileName}`;
+              const result = await storageService.uploadFile({
+                bucket: "lesson-videos",
+                path,
+                file: files.video,
+              });
+              // Salvar o path do storage (não a URL assinada)
+              updatedData.videoStoragePath = result.path;
+              // Limpar URL anterior se houver
+              delete updatedData.videoUrl;
+            }
+            
+            // Upload de imagem do bloco
+            if (files.image && block.type === 'image') {
+              const fileName = storageService.generateUniqueFileName(files.image.name);
+              const path = `${selectedModuleId}/${lessonId}/blocks/${fileName}`;
+              const result = await storageService.uploadFile({
+                bucket: "lesson-assets",
+                path,
+                file: files.image,
+              });
+              // Salvar o path do storage (não a URL assinada)
+              updatedData.imageStoragePath = result.path;
+              // Limpar URL anterior se houver
+              delete updatedData.imageUrl;
+            }
+            
+            return {
+              ...block,
+              data: updatedData
+            };
+          })
+        );
+        
+        // Atualizar a aula com os blocos atualizados
+        await lessonService.updateLesson(lessonId, {
+          content_data: { blocks: updatedBlocks } as any
+        });
       }
 
       if (editing === "new") {
@@ -701,6 +776,7 @@ export function LessonsManager() {
                               onMoveDown={() => moveBlockDown(block.id)}
                               canMoveUp={index > 0}
                               canMoveDown={index < contentBlocks.length - 1}
+                              onFileChange={handleBlockFileChange}
                             />
                           ))}
                       </div>
