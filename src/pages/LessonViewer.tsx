@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { lessonService } from "@/services/lessonService";
 import { progressService } from "@/services/progressService";
 import { storageService } from "@/services/storageService";
+import { quizService } from "@/services/quizService";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import { MRIViewer } from "@/components/labs/MRIViewer";
 import { UltrasoundSimulator } from "@/components/labs/UltrasoundSimulator";
 import { EletroterapiaLab } from "@/components/labs/EletroterapiaLab";
 import { ThermalLab } from "@/components/labs/ThermalLab";
+import QuizTaker from "@/components/QuizTaker";
 import { toast } from "@/hooks/use-toast";
 
 export default function LessonViewer() {
@@ -32,6 +34,7 @@ export default function LessonViewer() {
   const [loading, setLoading] = useState(true);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [lab, setLab] = useState<any>(null);
+  const [quizId, setQuizId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -64,6 +67,14 @@ export default function LessonViewer() {
       if (data.content_type === "laboratorio_virtual") {
         const labData = await lessonService.getVirtualLab(lessonId!);
         setLab(labData);
+      }
+
+      // Se é quiz, carregar quiz
+      if (data.content_type === "quiz") {
+        const quizzes = await quizService.getQuizzesByLesson(lessonId!);
+        if (quizzes.length > 0) {
+          setQuizId(quizzes[0].id);
+        }
       }
     } catch (error: any) {
       console.error("Erro ao carregar aula:", error);
@@ -239,6 +250,17 @@ export default function LessonViewer() {
                 <ThermalLab config={lab.config_data} />
               )}
             </>
+          )}
+
+          {/* Quiz */}
+          {lesson.content_type === "quiz" && quizId && (
+            <QuizTaker 
+              quizId={quizId} 
+              onComplete={() => {
+                loadProgress();
+                handleComplete();
+              }}
+            />
           )}
 
           {/* Descrição */}
