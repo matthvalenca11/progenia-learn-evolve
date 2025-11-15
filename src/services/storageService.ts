@@ -197,12 +197,28 @@ export const storageService = {
    * Gerar nome de arquivo único
    */
   generateUniqueFileName(originalName: string): string {
+    // Remove acentos e caracteres inválidos, manter apenas [a-z0-9._-]
+    const normalized = originalName
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, ''); // remover diacríticos
+
+    const extMatch = normalized.match(/\.([^.]+)$/);
+    const extension = extMatch ? extMatch[1].toLowerCase() : '';
+    const base = normalized.replace(/\.[^.]+$/, '');
+
+    let safeBase = base
+      .replace(/[^a-zA-Z0-9._-]+/g, '-') // trocar espaços e unicode por '-'
+      .replace(/-+/g, '-')
+      .replace(/^[-.]+|[-.]+$/g, '')
+      .toLowerCase();
+
+    if (!safeBase) safeBase = 'file';
+
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
-    const extension = originalName.split(".").pop();
-    const nameWithoutExt = originalName.replace(`.${extension}`, "");
-    
-    return `${nameWithoutExt}-${timestamp}-${random}.${extension}`;
+    const unique = `${safeBase}-${timestamp}-${random}`;
+
+    return extension ? `${unique}.${extension}` : unique;
   },
 
   /**
