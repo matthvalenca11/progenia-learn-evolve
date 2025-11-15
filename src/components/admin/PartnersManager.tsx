@@ -1,33 +1,34 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { FileUploadField } from "@/components/ui/FileUploadField";
 import { storageService } from "@/services/storageService";
-import { Plus, Save, Trash2, Handshake, Edit2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
+import { Plus, Edit2, Trash2, Save, X, Handshake } from "lucide-react";
 
 interface Partner {
   id: string;
   name: string;
-  logo_url: string | null;
   description: string | null;
   website_url: string | null;
-  ordem: number;
+  logo_url: string | null;
+  ordem: number | null;
 }
 
-export const PartnersManager = () => {
+export function PartnersManager() {
   const [partners, setPartners] = useState<Partner[]>([]);
-  const [editingPartner, setEditingPartner] = useState<Partial<Partner>>({
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
     name: "",
-    logo_url: "",
     description: "",
     website_url: "",
+    logo_url: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -35,299 +36,290 @@ export const PartnersManager = () => {
   }, []);
 
   const loadPartners = async () => {
-    const { data } = await supabase
-      .from("partners")
-      .select("*")
-      .order("ordem");
-    if (data) setPartners(data);
+    try {
+      const { data, error } = await supabase
+        .from("partners")
+        .select("*")
+        .order("ordem", { ascending: true });
+
+      if (error) throw error;
+      setPartners(data || []);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao carregar parceiros",
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Por favor, selecione uma imagem",
+  const startEdit = (partner?: Partner) => {
+    if (partner) {
+      setEditing(partner.id);
+      setFormData({
+        name: partner.name,
+        description: partner.description || "",
+        website_url: partner.website_url || "",
+        logo_url: partner.logo_url || "",
       });
-      return;
+    } else {
+      setEditing("new");
+      setFormData({
+        name: "",
+        description: "",
+        website_url: "",
+        logo_url: "",
+      });
     }
+    setSelectedFile(null);
+  };
 
-    if (file.size > 2 * 1024 * 1024) {
+  const cancelEdit = () => {
+    setEditing(null);
+    setFormData({
+      name: "",
+      description: "",
+      website_url: "",
+      logo_url: "",
+    });
+    setSelectedFile(null);
+  };
+
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "A imagem deve ter no máximo 2MB",
+        title: "Nome obrigatório",
+        description: "Por favor, informe o nome do parceiro",
       });
       return;
     }
 
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let logoUrl = formData.logo_url;
 
-      const { error: uploadError } = await supabase.storage
-        .from('partner-logos')
-        .upload(filePath, file);
+      if (selectedFile) {
+        const fileName = storageService.generateUniqueFileName(selectedFile.name);
+        const result = await storageService.uploadFile({
+          bucket: "partner-logos",
+          path: fileName,
+          file: selectedFile,
+        });
+        logoUrl = storageService.getPublicUrl("partner-logos", result.path);
+      }
 
-      if (uploadError) throw uploadError;
+      const partnerData = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        website_url: formData.website_url.trim() || null,
+        logo_url: logoUrl || null,
+      };
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('partner-logos')
-        .getPublicUrl(filePath);
+      if (editing === "new") {
+        const { error } = await supabase
+          .from("partners")
+          .insert(partnerData);
+        if (error) throw error;
+        toast({
+          title: "Parceiro criado",
+          description: "O parceiro foi adicionado com sucesso",
+        });
+      } else {
+        const { error } = await supabase
+          .from("partners")
+          .update(partnerData)
+          .eq("id", editing);
+        if (error) throw error;
+        toast({
+          title: "Parceiro atualizado",
+          description: "As alterações foram salvas com sucesso",
+        });
+      }
 
-      setEditingPartner({ ...editingPartner, logo_url: publicUrl });
-      toast({
-        title: "Sucesso",
-        description: "Logo enviado com sucesso!",
-      });
-    } catch (error) {
-      console.error("Erro no upload:", error);
+      loadPartners();
+      cancelEdit();
+    } catch (error: any) {
       toast({
         variant: "destructive",
-        title: "Erro",
-        description: "Erro ao enviar logo",
+        title: "Erro ao salvar",
+        description: error.message,
       });
     } finally {
       setUploading(false);
     }
   };
 
-  const handleSave = async () => {
-    if (!editingPartner.name) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Nome é obrigatório",
-      });
-      return;
-    }
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) return;
 
     try {
-      if (editingPartner.id) {
-        const { error } = await supabase
-          .from("partners")
-          .update({
-            name: editingPartner.name,
-            logo_url: editingPartner.logo_url,
-            description: editingPartner.description,
-            website_url: editingPartner.website_url,
-          })
-          .eq("id", editingPartner.id);
-        if (error) throw error;
-        toast({
-          title: "Sucesso",
-          description: "Parceiro atualizado!",
-        });
-      } else {
-        const { error } = await supabase.from("partners").insert({
-          name: editingPartner.name,
-          logo_url: editingPartner.logo_url,
-          description: editingPartner.description,
-          website_url: editingPartner.website_url,
-          ordem: partners.length,
-        });
-        if (error) throw error;
-        toast({
-          title: "Sucesso",
-          description: "Parceiro adicionado!",
-        });
-      }
+      const { error } = await supabase
+        .from("partners")
+        .delete()
+        .eq("id", id);
 
-      setEditingPartner({ name: "", logo_url: "", description: "", website_url: "" });
-      loadPartners();
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: "Erro ao salvar parceiro",
-      });
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Tem certeza que deseja excluir este parceiro?")) return;
-    
-    try {
-      const { error } = await supabase.from("partners").delete().eq("id", id);
       if (error) throw error;
-      toast.success("Parceiro excluído");
+
+      toast({
+        title: "Parceiro excluído",
+        description: "O parceiro foi removido com sucesso",
+      });
       loadPartners();
-    } catch (error) {
-      toast.error("Erro ao excluir parceiro");
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao excluir",
+        description: error.message,
+      });
     }
   };
+
+  if (loading) {
+    return <div className="text-center py-8">Carregando...</div>;
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="p-6">
-        <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          {editingPartner.id ? "Editar Parceiro" : "Adicionar Parceiro"}
-        </h3>
-
-        <div className="space-y-4">
-          <div>
-            <Label>Nome do Parceiro</Label>
-            <Input
-              value={editingPartner.name}
-              onChange={(e) => setEditingPartner({ ...editingPartner, name: e.target.value })}
-              placeholder="ex: Universidade Federal"
-            />
-          </div>
-
-          <div>
-            <Label>Logo do Parceiro</Label>
-            <div className="space-y-2">
-              {editingPartner.logo_url && (
-                <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
-                  <img 
-                    src={editingPartner.logo_url} 
-                    alt="Preview" 
-                    className="h-16 w-16 object-contain bg-background rounded"
-                  />
-                  <div className="flex-1 text-sm text-muted-foreground truncate">
-                    {editingPartner.logo_url}
-                  </div>
-                </div>
-              )}
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => document.getElementById('partner-logo-upload')?.click()}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Fazer Upload da Imagem
-                  </>
-                )}
-              </Button>
-              <input
-                id="partner-logo-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-              <p className="text-xs text-muted-foreground">
-                Formatos aceitos: JPG, PNG, SVG (máximo 2MB)
-              </p>
-            </div>
-          </div>
-
-          <div>
-            <Label>Descrição</Label>
-            <Textarea
-              value={editingPartner.description || ""}
-              onChange={(e) => setEditingPartner({ ...editingPartner, description: e.target.value })}
-              placeholder="Breve descrição do parceiro"
-              rows={3}
-            />
-          </div>
-
-          <div>
-            <Label>Site do Parceiro</Label>
-            <Input
-              value={editingPartner.website_url || ""}
-              onChange={(e) => setEditingPartner({ ...editingPartner, website_url: e.target.value })}
-              placeholder="https://..."
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <Button onClick={handleSave} className="flex-1">
-              <Save className="mr-2 h-4 w-4" />
-              {editingPartner.id ? "Atualizar" : "Adicionar"}
-            </Button>
-            {editingPartner.id && (
-              <Button
-                variant="outline"
-                onClick={() => setEditingPartner({ name: "", logo_url: "", description: "", website_url: "" })}
-              >
-                Cancelar
-              </Button>
-            )}
-          </div>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Handshake className="h-5 w-5" />
+            Gerenciar Parceiros & Apoiadores
+          </CardTitle>
+          <Button onClick={() => startEdit()} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Parceiro
+          </Button>
         </div>
-      </Card>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {editing && (
+          <Card className="border-primary">
+            <CardContent className="pt-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nome *</label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Nome do parceiro"
+                />
+              </div>
 
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Parceiros Cadastrados ({partners.length})</h3>
-        {partners.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Handshake className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum Parceiro Ainda</h3>
-            <p className="text-muted-foreground">
-              Adicione parceiros e apoiadores da plataforma
-            </p>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {partners.map((partner) => (
-              <Card key={partner.id} className="p-4">
-                <div className="flex items-center gap-4">
-                  {partner.logo_url ? (
-                    <img 
-                      src={partner.logo_url} 
-                      alt={partner.name}
-                      className="h-16 w-16 object-contain bg-muted rounded"
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Descrição</label>
+                <Textarea
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  placeholder="Breve descrição sobre o parceiro"
+                  rows={3}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Website</label>
+                <Input
+                  value={formData.website_url}
+                  onChange={(e) => setFormData({ ...formData, website_url: e.target.value })}
+                  placeholder="https://..."
+                  type="url"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Logo</label>
+                <FileUploadField
+                  accept="image/*"
+                  onFilesSelected={(files) => setSelectedFile(files[0])}
+                  label="Selecione o logo do parceiro"
+                  description="Formatos: JPG, PNG, SVG"
+                  maxSize={5}
+                />
+                {formData.logo_url && !selectedFile && (
+                  <div className="mt-2">
+                    <img
+                      src={formData.logo_url}
+                      alt="Logo atual"
+                      className="h-20 object-contain border rounded p-2"
                     />
-                  ) : (
-                    <div className="h-16 w-16 bg-muted rounded flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Button onClick={handleSave} disabled={uploading} className="flex-1">
+                  <Save className="h-4 w-4 mr-2" />
+                  {uploading ? "Salvando..." : "Salvar"}
+                </Button>
+                <Button onClick={cancelEdit} variant="outline" disabled={uploading}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {partners.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhum parceiro cadastrado ainda
+          </div>
+        ) : (
+          <div className="grid gap-3">
+            {partners.map((partner) => (
+              <Card key={partner.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-4">
+                    {partner.logo_url && (
+                      <img
+                        src={partner.logo_url}
+                        alt={partner.name}
+                        className="h-16 w-16 object-contain border rounded p-1 flex-shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium">{partner.name}</h4>
+                      {partner.description && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {partner.description}
+                        </p>
+                      )}
+                      {partner.website_url && (
+                        <a
+                          href={partner.website_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-primary hover:underline mt-1 inline-block"
+                        >
+                          Visitar website
+                        </a>
+                      )}
                     </div>
-                  )}
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{partner.name}</h4>
-                    {partner.description && (
-                      <p className="text-sm text-muted-foreground">{partner.description}</p>
-                    )}
-                    {partner.website_url && (
-                      <a 
-                        href={partner.website_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-xs text-secondary hover:underline"
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(partner)}
                       >
-                        {partner.website_url}
-                      </a>
-                    )}
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(partner.id, partner.name)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditingPartner(partner)}
-                    >
-                      Editar
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDelete(partner.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                </CardContent>
               </Card>
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
-};
+}

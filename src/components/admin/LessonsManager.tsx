@@ -1,51 +1,49 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { moduleService } from "@/services/moduleService";
+import { lessonService } from "@/services/lessonService";
+import { storageService } from "@/services/storageService";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Save, Trash2, Video, FileText, HelpCircle, Beaker } from "lucide-react";
-import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileUploadField } from "@/components/ui/FileUploadField";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/hooks/use-toast";
+import { 
+  GraduationCap, 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Save, 
+  X, 
+  Video, 
+  FileText,
+  FlaskConical,
+  ClipboardCheck,
+  Eye,
+  EyeOff
+} from "lucide-react";
 
-interface Module {
-  id: string;
-  title: string;
-}
-
-interface Lesson {
-  id: string;
-  module_id: string;
-  title: string;
-  descricao_curta: string | null;
-  content_type: string;
-  content_url: string | null;
-  video_url: string | null;
-  content_data: any;
-  recursos: any;
-  published: boolean;
-  order_index: number | null;
-}
-
-export const LessonsManager = () => {
-  const [modules, setModules] = useState<Module[]>([]);
-  const [lessons, setLessons] = useState<Lesson[]>([]);
+export function LessonsManager() {
+  const [modules, setModules] = useState<any[]>([]);
   const [selectedModuleId, setSelectedModuleId] = useState<string>("");
-  const [editingLesson, setEditingLesson] = useState<Partial<Lesson>>({
+  const [lessons, setLessons] = useState<any[]>([]);
+  const [editing, setEditing] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
     title: "",
-    descricao_curta: "",
     content_type: "video",
-    content_url: "",
-    video_url: "",
+    descricao_curta: "",
+    duration_minutes: 0,
+    video_external_url: "",
+    conteudo_rich_text: "",
     published: false,
   });
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [assetFiles, setAssetFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadModules();
@@ -53,338 +51,484 @@ export const LessonsManager = () => {
 
   useEffect(() => {
     if (selectedModuleId) {
-      loadLessons(selectedModuleId);
+      loadLessons();
     }
   }, [selectedModuleId]);
 
   const loadModules = async () => {
-    const { data } = await supabase
-      .from("modules")
-      .select("id, title")
-      .order("order_index");
-    if (data) setModules(data);
-  };
-
-  const loadLessons = async (moduleId: string) => {
-    const { data } = await supabase
-      .from("lessons")
-      .select("*")
-      .eq("module_id", moduleId)
-      .order("order_index");
-    if (data) setLessons(data);
-  };
-
-  const handleSaveLesson = async () => {
-    if (!selectedModuleId) {
-      toast.error("Selecione um módulo primeiro");
-      return;
-    }
-
-    if (!editingLesson.title) {
-      toast.error("Título é obrigatório");
-      return;
-    }
-
     try {
-      if (editingLesson.id) {
-        // Update
-        const { error } = await supabase
-          .from("lessons")
-          .update({
-            title: editingLesson.title,
-            descricao_curta: editingLesson.descricao_curta,
-            content_type: editingLesson.content_type,
-            content_url: editingLesson.content_url,
-            video_url: editingLesson.video_url,
-            published: editingLesson.published,
-          })
-          .eq("id", editingLesson.id);
-
-        if (error) throw error;
-        toast.success("Aula atualizada com sucesso!");
-      } else {
-        // Create
-        const { error } = await supabase.from("lessons").insert({
-          module_id: selectedModuleId,
-          title: editingLesson.title,
-          descricao_curta: editingLesson.descricao_curta,
-          content_type: editingLesson.content_type || "video",
-          content_url: editingLesson.content_url,
-          video_url: editingLesson.video_url,
-          published: editingLesson.published || false,
-          order_index: lessons.length,
-        });
-
-        if (error) throw error;
-        toast.success("Aula criada com sucesso!");
+      const data = await moduleService.getAllModules();
+      setModules(data);
+      if (data.length > 0 && !selectedModuleId) {
+        setSelectedModuleId(data[0].id);
       }
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    }
+  };
 
-      setEditingLesson({
+  const loadLessons = async () => {
+    try {
+      const data = await lessonService.getAllLessonsByModule(selectedModuleId);
+      setLessons(data);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    }
+  };
+
+  const startEdit = (lesson?: any) => {
+    if (lesson) {
+      setEditing(lesson.id);
+      setFormData({
+        title: lesson.title,
+        content_type: lesson.content_type,
+        descricao_curta: lesson.descricao_curta || "",
+        duration_minutes: lesson.duration_minutes || 0,
+        video_external_url: lesson.video_external_url || "",
+        conteudo_rich_text: lesson.conteudo_rich_text || "",
+        published: lesson.published || false,
+      });
+    } else {
+      setEditing("new");
+      setFormData({
         title: "",
-        descricao_curta: "",
         content_type: "video",
-        content_url: "",
-        video_url: "",
+        descricao_curta: "",
+        duration_minutes: 0,
+        video_external_url: "",
+        conteudo_rich_text: "",
         published: false,
       });
-      loadLessons(selectedModuleId);
-    } catch (error) {
-      toast.error("Erro ao salvar aula");
-      console.error(error);
+    }
+    setVideoFile(null);
+    setAssetFiles([]);
+  };
+
+  const cancelEdit = () => {
+    setEditing(null);
+    setFormData({
+      title: "",
+      content_type: "video",
+      descricao_curta: "",
+      duration_minutes: 0,
+      video_external_url: "",
+      conteudo_rich_text: "",
+      published: false,
+    });
+    setVideoFile(null);
+    setAssetFiles([]);
+  };
+
+  const handleSave = async () => {
+    if (!formData.title.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Título é obrigatório",
+      });
+      return;
+    }
+
+    if (!selectedModuleId) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Selecione um módulo",
+      });
+      return;
+    }
+
+    setUploading(true);
+    try {
+      let videoStoragePath = null;
+      let assetsData: any[] = [];
+
+      if (videoFile) {
+        const fileName = storageService.generateUniqueFileName(videoFile.name);
+        const path = `${selectedModuleId}/${editing === "new" ? "temp" : editing}/${fileName}`;
+        const result = await storageService.uploadFile({
+          bucket: "lesson-videos",
+          path,
+          file: videoFile,
+        });
+        videoStoragePath = result.path;
+      }
+
+      if (assetFiles.length > 0) {
+        const lessonId = editing === "new" ? "temp" : editing;
+        const uploads = await Promise.all(
+          assetFiles.map(async (file) => {
+            const fileName = storageService.generateUniqueFileName(file.name);
+            const path = `${selectedModuleId}/${lessonId}/${fileName}`;
+            const result = await storageService.uploadFile({
+              bucket: "lesson-assets",
+              path,
+              file,
+            });
+            return {
+              name: file.name,
+              path: result.path,
+              type: file.type,
+            };
+          })
+        );
+        assetsData = uploads;
+      }
+
+      const lessonData: any = {
+        module_id: selectedModuleId,
+        title: formData.title.trim(),
+        content_type: formData.content_type,
+        descricao_curta: formData.descricao_curta.trim() || null,
+        duration_minutes: formData.duration_minutes || null,
+        published: formData.published,
+      };
+
+      if (formData.content_type === "video") {
+        lessonData.video_storage_path = videoStoragePath;
+        lessonData.video_external_url = formData.video_external_url.trim() || null;
+      }
+
+      if (formData.content_type === "artigo") {
+        lessonData.conteudo_rich_text = formData.conteudo_rich_text;
+      }
+
+      if (assetsData.length > 0) {
+        lessonData.assets = assetsData;
+      }
+
+      if (editing === "new") {
+        await lessonService.createLesson(lessonData);
+        toast({
+          title: "Aula criada",
+          description: "A aula foi criada com sucesso",
+        });
+      } else {
+        await lessonService.updateLesson(editing, lessonData);
+        toast({
+          title: "Aula atualizada",
+          description: "As alterações foram salvas com sucesso",
+        });
+      }
+
+      loadLessons();
+      cancelEdit();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
+    } finally {
+      setUploading(false);
     }
   };
 
-  const handleDeleteLesson = async (lessonId: string) => {
-    if (!confirm("Tem certeza que deseja excluir esta aula?")) return;
+  const handleDelete = async (id: string, title: string) => {
+    if (!confirm(`Tem certeza que deseja excluir "${title}"?`)) return;
 
     try {
-      const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
-      if (error) throw error;
-      toast.success("Aula excluída");
-      loadLessons(selectedModuleId);
-    } catch (error) {
-      toast.error("Erro ao excluir aula");
+      await lessonService.deleteLesson(id);
+      toast({
+        title: "Aula excluída",
+        description: "A aula foi removida com sucesso",
+      });
+      loadLessons();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
     }
   };
 
-  const togglePublish = async (lesson: Lesson) => {
+  const togglePublish = async (id: string, currentStatus: boolean) => {
     try {
-      const { error } = await supabase
-        .from("lessons")
-        .update({ published: !lesson.published })
-        .eq("id", lesson.id);
-
-      if (error) throw error;
-      toast.success(lesson.published ? "Aula despublicada" : "Aula publicada");
-      loadLessons(selectedModuleId);
-    } catch (error) {
-      toast.error("Erro ao atualizar status");
+      await lessonService.togglePublish(id, !currentStatus);
+      toast({
+        title: currentStatus ? "Aula despublicada" : "Aula publicada",
+        description: currentStatus 
+          ? "A aula não está mais visível para os alunos"
+          : "A aula está agora visível para os alunos",
+      });
+      loadLessons();
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: error.message,
+      });
     }
   };
 
-  const getContentIcon = (type: string) => {
+  const getContentTypeIcon = (type: string) => {
     switch (type) {
       case "video":
-        return <Video className="h-5 w-5" />;
-      case "article":
-        return <FileText className="h-5 w-5" />;
+        return <Video className="h-4 w-4" />;
+      case "artigo":
+        return <FileText className="h-4 w-4" />;
       case "quiz":
-        return <HelpCircle className="h-5 w-5" />;
-      case "virtual_lab":
-        return <Beaker className="h-5 w-5" />;
+        return <ClipboardCheck className="h-4 w-4" />;
+      case "laboratorio_virtual":
+        return <FlaskConical className="h-4 w-4" />;
       default:
-        return <FileText className="h-5 w-5" />;
+        return <FileText className="h-4 w-4" />;
     }
+  };
+
+  const getContentTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      video: "Vídeo",
+      artigo: "Artigo",
+      quiz: "Quiz",
+      laboratorio_virtual: "Lab Virtual",
+    };
+    return labels[type] || type;
   };
 
   return (
-    <div className="space-y-6">
-      {/* Module Selector */}
-      <Card className="p-6">
-        <Label htmlFor="module-select">Selecionar Módulo</Label>
-        <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
-          <SelectTrigger className="mt-2">
-            <SelectValue placeholder="Escolha um módulo" />
-          </SelectTrigger>
-          <SelectContent>
-            {modules.map((module) => (
-              <SelectItem key={module.id} value={module.id}>
-                {module.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </Card>
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2">
+            <GraduationCap className="h-5 w-5" />
+            Gerenciar Aulas
+          </CardTitle>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+            <Select value={selectedModuleId} onValueChange={setSelectedModuleId}>
+              <SelectTrigger className="w-full sm:w-[250px]">
+                <SelectValue placeholder="Selecione um módulo" />
+              </SelectTrigger>
+              <SelectContent>
+                {modules.map((module) => (
+                  <SelectItem key={module.id} value={module.id}>
+                    {module.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button onClick={() => startEdit()} size="sm" disabled={!selectedModuleId} className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              Nova Aula
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {editing && (
+          <Card className="border-primary">
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Título *</Label>
+                  <Input
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder="Nome da aula"
+                  />
+                </div>
 
-      {selectedModuleId && (
-        <>
-          {/* Create/Edit Lesson Form */}
-          <Card className="p-6">
-            <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Plus className="h-5 w-5" />
-              {editingLesson.id ? "Editar Aula" : "Criar Nova Aula"}
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="lesson-title">Título da Aula</Label>
-                <Input
-                  id="lesson-title"
-                  value={editingLesson.title}
-                  onChange={(e) =>
-                    setEditingLesson({ ...editingLesson, title: e.target.value })
-                  }
-                  placeholder="ex: Princípios da Eletroestimulação"
-                />
+                <div className="space-y-2">
+                  <Label>Tipo de Conteúdo *</Label>
+                  <Select 
+                    value={formData.content_type} 
+                    onValueChange={(v) => setFormData({ ...formData, content_type: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="video">Vídeo</SelectItem>
+                      <SelectItem value="artigo">Artigo</SelectItem>
+                      <SelectItem value="quiz">Quiz</SelectItem>
+                      <SelectItem value="laboratorio_virtual">Laboratório Virtual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div>
-                <Label htmlFor="lesson-desc">Descrição Curta</Label>
+              <div className="space-y-2">
+                <Label>Descrição Curta</Label>
                 <Textarea
-                  id="lesson-desc"
-                  value={editingLesson.descricao_curta || ""}
-                  onChange={(e) =>
-                    setEditingLesson({ ...editingLesson, descricao_curta: e.target.value })
-                  }
-                  placeholder="Breve descrição do conteúdo da aula"
+                  value={formData.descricao_curta}
+                  onChange={(e) => setFormData({ ...formData, descricao_curta: e.target.value })}
+                  placeholder="Breve descrição do conteúdo"
                   rows={2}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="lesson-type">Tipo de Conteúdo</Label>
-                <Select
-                  value={editingLesson.content_type}
-                  onValueChange={(value) =>
-                    setEditingLesson({ ...editingLesson, content_type: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="video">Vídeo</SelectItem>
-                    <SelectItem value="article">Artigo/Texto</SelectItem>
-                    <SelectItem value="quiz">Quiz</SelectItem>
-                    <SelectItem value="virtual_lab">Laboratório Virtual</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="video-url">URL do Vídeo (opcional)</Label>
+              <div className="space-y-2">
+                <Label>Duração (minutos)</Label>
                 <Input
-                  id="video-url"
-                  value={editingLesson.video_url || ""}
-                  onChange={(e) =>
-                    setEditingLesson({ ...editingLesson, video_url: e.target.value })
-                  }
-                  placeholder="https://youtube.com/..."
+                  type="number"
+                  value={formData.duration_minutes}
+                  onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 0 })}
+                  min={0}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="content-url">URL do Conteúdo (opcional)</Label>
-                <Input
-                  id="content-url"
-                  value={editingLesson.content_url || ""}
-                  onChange={(e) =>
-                    setEditingLesson({ ...editingLesson, content_url: e.target.value })
-                  }
-                  placeholder="Link para PDF, artigo, etc."
+              {formData.content_type === "video" && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Upload de Vídeo</Label>
+                    <FileUploadField
+                      accept="video/*"
+                      onFilesSelected={(files) => setVideoFile(files[0])}
+                      label="Selecione o vídeo da aula"
+                      description="Formatos: MP4, WEBM"
+                      maxSize={100}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>OU URL Externa (YouTube, Vimeo, etc.)</Label>
+                    <Input
+                      value={formData.video_external_url}
+                      onChange={(e) => setFormData({ ...formData, video_external_url: e.target.value })}
+                      placeholder="https://..."
+                      type="url"
+                    />
+                  </div>
+                </>
+              )}
+
+              {formData.content_type === "artigo" && (
+                <div className="space-y-2">
+                  <Label>Conteúdo do Artigo</Label>
+                  <Textarea
+                    value={formData.conteudo_rich_text}
+                    onChange={(e) => setFormData({ ...formData, conteudo_rich_text: e.target.value })}
+                    placeholder="Conteúdo em HTML ou texto"
+                    rows={10}
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Materiais Complementares</Label>
+                <FileUploadField
+                  multiple
+                  onFilesSelected={setAssetFiles}
+                  label="PDFs, imagens, slides, etc."
+                  description="Múltiplos arquivos permitidos"
+                  maxSize={50}
                 />
               </div>
 
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="published"
-                  checked={editingLesson.published || false}
-                  onChange={(e) =>
-                    setEditingLesson({ ...editingLesson, published: e.target.checked })
-                  }
-                  className="h-4 w-4"
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                  <Label>Publicar aula</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Tornar visível para os alunos
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.published}
+                  onCheckedChange={(checked) => setFormData({ ...formData, published: checked })}
                 />
-                <Label htmlFor="published" className="cursor-pointer">
-                  Publicar aula imediatamente
-                </Label>
               </div>
 
               <div className="flex gap-2">
-                <Button onClick={handleSaveLesson} className="gradient-accent text-white">
-                  <Save className="mr-2 h-4 w-4" />
-                  {editingLesson.id ? "Atualizar" : "Criar"} Aula
+                <Button onClick={handleSave} disabled={uploading} className="flex-1">
+                  <Save className="h-4 w-4 mr-2" />
+                  {uploading ? "Salvando..." : "Salvar"}
                 </Button>
-                {editingLesson.id && (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      setEditingLesson({
-                        title: "",
-                        descricao_curta: "",
-                        content_type: "video",
-                        content_url: "",
-                        video_url: "",
-                        published: false,
-                      })
-                    }
-                  >
-                    Cancelar
-                  </Button>
-                )}
+                <Button onClick={cancelEdit} variant="outline" disabled={uploading}>
+                  <X className="h-4 w-4 mr-2" />
+                  Cancelar
+                </Button>
               </div>
-            </div>
+            </CardContent>
           </Card>
+        )}
 
-          {/* Existing Lessons */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4">
-              Aulas Existentes ({lessons.length})
-            </h3>
-
-            {lessons.length === 0 ? (
-              <Card className="p-12 text-center">
-                <p className="text-muted-foreground">
-                  Nenhuma aula criada ainda para este módulo
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-3">
-                {lessons.map((lesson) => (
-                  <Card key={lesson.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        {getContentIcon(lesson.content_type)}
-                        <div>
-                          <h4 className="font-semibold">{lesson.title}</h4>
-                          {lesson.descricao_curta && (
-                            <p className="text-sm text-muted-foreground">
-                              {lesson.descricao_curta}
-                            </p>
-                          )}
-                          <div className="flex gap-3 text-xs text-muted-foreground mt-1">
-                            <span>Tipo: {lesson.content_type}</span>
-                            <span
-                              className={
-                                lesson.published ? "text-secondary" : "text-muted-foreground"
-                              }
-                            >
-                              {lesson.published ? "Publicada" : "Rascunho"}
-                            </span>
-                          </div>
-                        </div>
+        {!selectedModuleId ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Selecione um módulo para gerenciar suas aulas
+          </div>
+        ) : lessons.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Nenhuma aula cadastrada neste módulo ainda
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {lessons.map((lesson, index) => (
+              <Card key={lesson.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className="flex-shrink-0 mt-1">
+                        <Badge variant="outline" className="gap-1">
+                          {getContentTypeIcon(lesson.content_type)}
+                          {getContentTypeLabel(lesson.content_type)}
+                        </Badge>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingLesson(lesson)}
-                        >
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={lesson.published ? "outline" : "default"}
-                          onClick={() => togglePublish(lesson)}
-                        >
-                          {lesson.published ? "Despublicar" : "Publicar"}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteLesson(lesson.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-sm text-muted-foreground">#{index + 1}</span>
+                          <h4 className="font-medium">{lesson.title}</h4>
+                          {lesson.published ? (
+                            <Eye className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <EyeOff className="h-4 w-4 text-muted-foreground" />
+                          )}
+                        </div>
+                        {lesson.descricao_curta && (
+                          <p className="text-sm text-muted-foreground line-clamp-1">
+                            {lesson.descricao_curta}
+                          </p>
+                        )}
+                        {lesson.duration_minutes && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {lesson.duration_minutes} minutos
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => togglePublish(lesson.id, lesson.published)}
+                        title={lesson.published ? "Despublicar" : "Publicar"}
+                      >
+                        {lesson.published ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => startEdit(lesson)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(lesson.id, lesson.title)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
-        </>
-      )}
-    </div>
+        )}
+      </CardContent>
+    </Card>
   );
-};
+}
