@@ -71,9 +71,15 @@ export default function LessonViewer() {
 
       // Se é quiz, carregar quiz
       if (data.content_type === "quiz") {
-        const quizzes = await quizService.getQuizzesByLesson(lessonId!);
-        if (quizzes.length > 0) {
-          setQuizId(quizzes[0].id);
+        try {
+          const quizzes = await quizService.getQuizzesByLesson(lessonId!);
+          if (quizzes.length > 0) {
+            setQuizId(quizzes[0].id);
+          } else {
+            console.warn("Nenhum quiz encontrado para esta aula");
+          }
+        } catch (error) {
+          console.error("Erro ao carregar quiz:", error);
         }
       }
     } catch (error: any) {
@@ -253,14 +259,31 @@ export default function LessonViewer() {
           )}
 
           {/* Quiz */}
-          {lesson.content_type === "quiz" && quizId && (
-            <QuizTaker 
-              quizId={quizId} 
-              onComplete={() => {
-                loadProgress();
-                handleComplete();
-              }}
-            />
+          {lesson.content_type === "quiz" && (
+            <>
+              {quizId ? (
+                <QuizTaker 
+                  quizId={quizId} 
+                  onComplete={() => {
+                    loadProgress();
+                    handleComplete();
+                  }}
+                />
+              ) : (
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="text-center py-8">
+                      <p className="text-muted-foreground">
+                        Este quiz ainda não possui perguntas cadastradas.
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Entre em contato com o instrutor.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
 
           {/* Descrição */}
