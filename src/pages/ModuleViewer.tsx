@@ -24,7 +24,6 @@ interface Lesson {
   title: string;
   content_type: string;
   descricao_curta: string | null;
-  duration_minutes: number | null;
   order_index: number | null;
   published: boolean;
 }
@@ -229,8 +228,6 @@ export default function ModuleViewer() {
               <div className="flex gap-4 mt-4 text-sm text-muted-foreground">
                 <span>{lessons.length} aulas</span>
                 <span>•</span>
-                <span>{module.estimated_hours}h estimadas</span>
-                <span>•</span>
                 <span>
                   {lessons.filter(l => l.progress?.status === "concluido").length} concluídas
                 </span>
@@ -284,11 +281,6 @@ export default function ModuleViewer() {
                             {getContentTypeIcon(lesson.content_type)}
                             {getContentTypeLabel(lesson.content_type)}
                           </Badge>
-                          {lesson.duration_minutes && (
-                            <span className="text-xs text-muted-foreground">
-                              {lesson.duration_minutes} min
-                            </span>
-                          )}
                         </div>
 
                         <h3 className="font-semibold mb-1">{lesson.title}</h3>
