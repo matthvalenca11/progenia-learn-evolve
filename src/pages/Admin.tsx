@@ -106,7 +106,9 @@ const Admin = () => {
     try {
       const validated = moduleSchema.parse(newModule);
       
-      const { error } = await supabase
+      console.log("Criando módulo com dados:", validated);
+      
+      const { data, error } = await supabase
         .from("modules")
         .insert({
           title: validated.title,
@@ -116,10 +118,15 @@ const Admin = () => {
           estimated_hours: validated.estimated_hours,
           order_index: modules.length,
           published: false,
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Erro do Supabase:", error);
+        throw error;
+      }
 
+      console.log("Módulo criado:", data);
       toast.success("Módulo criado com sucesso!");
       setNewModule({
         title: "",
@@ -130,8 +137,11 @@ const Admin = () => {
       });
       loadModules();
     } catch (error) {
+      console.error("Erro ao criar módulo:", error);
       if (error instanceof z.ZodError) {
         toast.error(error.errors[0].message);
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        toast.error(`Erro: ${(error as any).message}`);
       } else {
         toast.error("Falha ao criar módulo");
       }

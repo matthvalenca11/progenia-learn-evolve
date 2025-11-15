@@ -14,6 +14,9 @@ const Landing = () => {
             <img src={logo} alt="ProGenia" className="h-10" />
           </div>
           <div className="flex items-center gap-4">
+            <Link to="/sobre">
+              <Button variant="ghost">Sobre</Button>
+            </Link>
             <Link to="/auth">
               <Button variant="ghost">Entrar</Button>
             </Link>
