@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Save, Trash2, Users } from "lucide-react";
+import { Plus, Save, Trash2, Users, Upload, UserCircle } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeamMember {
@@ -25,6 +25,7 @@ export const TeamManager = () => {
     bio: "",
     photo_url: "",
   });
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     loadTeam();
@@ -36,6 +37,46 @@ export const TeamManager = () => {
       .select("*")
       .order("ordem");
     if (data) setTeam(data);
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error("Por favor, selecione uma imagem");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 2MB");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('team-photos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('team-photos')
+        .getPublicUrl(filePath);
+
+      setEditingMember({ ...editingMember, photo_url: publicUrl });
+      toast.success("Foto enviada com sucesso!");
+    } catch (error) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro ao enviar foto");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -72,6 +113,7 @@ export const TeamManager = () => {
       setEditingMember({ name: "", role: "", bio: "", photo_url: "" });
       loadTeam();
     } catch (error) {
+      console.error("Erro ao salvar:", error);
       toast.error("Erro ao salvar membro");
     }
   };
@@ -119,26 +161,64 @@ export const TeamManager = () => {
           </div>
 
           <div>
-            <Label>URL da Foto</Label>
-            <Input
-              value={editingMember.photo_url || ""}
-              onChange={(e) => setEditingMember({ ...editingMember, photo_url: e.target.value })}
-              placeholder="https://..."
-            />
+            <Label>Foto do Membro</Label>
+            <div className="space-y-2">
+              {editingMember.photo_url && (
+                <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
+                  <img 
+                    src={editingMember.photo_url} 
+                    alt="Preview" 
+                    className="h-20 w-20 object-cover rounded-full"
+                  />
+                  <div className="flex-1 text-sm text-muted-foreground truncate">
+                    {editingMember.photo_url}
+                  </div>
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => document.getElementById('team-photo-upload')?.click()}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Fazer Upload da Foto
+                  </>
+                )}
+              </Button>
+              <input
+                id="team-photo-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              <p className="text-xs text-muted-foreground">
+                Formatos aceitos: JPG, PNG (máximo 2MB)
+              </p>
+            </div>
           </div>
 
           <div>
-            <Label>Mini Bio</Label>
+            <Label>Biografia</Label>
             <Textarea
               value={editingMember.bio || ""}
               onChange={(e) => setEditingMember({ ...editingMember, bio: e.target.value })}
-              placeholder="Breve descrição do membro da equipe"
-              rows={3}
+              placeholder="Breve descrição profissional"
+              rows={4}
             />
           </div>
 
           <div className="flex gap-2">
-            <Button onClick={handleSave} className="gradient-accent text-white">
+            <Button onClick={handleSave} className="flex-1">
               <Save className="mr-2 h-4 w-4" />
               {editingMember.id ? "Atualizar" : "Adicionar"}
             </Button>
@@ -155,38 +235,52 @@ export const TeamManager = () => {
       </Card>
 
       <div>
-        <h3 className="text-xl font-semibold mb-4">
-          Membros da Equipe ({team.length})
-        </h3>
-
+        <h3 className="text-xl font-semibold mb-4">Equipe Cadastrada ({team.length})</h3>
         {team.length === 0 ? (
           <Card className="p-12 text-center">
             <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum membro cadastrado ainda</p>
+            <h3 className="text-lg font-semibold mb-2">Nenhum Membro Ainda</h3>
+            <p className="text-muted-foreground">
+              Adicione membros da equipe ProGenia
+            </p>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid gap-4">
             {team.map((member) => (
               <Card key={member.id} className="p-4">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-full bg-muted mx-auto mb-3 flex items-center justify-center overflow-hidden">
-                    {member.photo_url ? (
-                      <img src={member.photo_url} alt={member.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Users className="h-10 w-10 text-muted-foreground" />
+                <div className="flex items-center gap-4">
+                  {member.photo_url ? (
+                    <img 
+                      src={member.photo_url} 
+                      alt={member.name}
+                      className="h-20 w-20 object-cover rounded-full"
+                    />
+                  ) : (
+                    <div className="h-20 w-20 bg-muted rounded-full flex items-center justify-center">
+                      <UserCircle className="h-12 w-12 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h4 className="font-semibold">{member.name}</h4>
+                    <p className="text-sm text-secondary">{member.role}</p>
+                    {member.bio && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{member.bio}</p>
                     )}
                   </div>
-                  <h4 className="font-semibold">{member.name}</h4>
-                  <p className="text-sm text-primary mb-2">{member.role}</p>
-                  {member.bio && (
-                    <p className="text-xs text-muted-foreground mb-3">{member.bio}</p>
-                  )}
-                  <div className="flex gap-2 justify-center">
-                    <Button size="sm" variant="outline" onClick={() => setEditingMember(member)}>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setEditingMember(member)}
+                    >
                       Editar
                     </Button>
-                    <Button size="sm" variant="destructive" onClick={() => handleDelete(member.id)}>
-                      <Trash2 className="h-3 w-3" />
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDelete(member.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
