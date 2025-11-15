@@ -25,7 +25,8 @@ import {
   GraduationCap,
   Handshake,
   UsersRound,
-  Beaker
+  Beaker,
+  Award
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
@@ -33,6 +34,8 @@ import { z } from "zod";
 import { LessonsManager } from "@/components/admin/LessonsManager";
 import { PartnersManager } from "@/components/admin/PartnersManager";
 import { TeamManager } from "@/components/admin/TeamManager";
+import { UsersManager } from "@/components/admin/UsersManager";
+import { GamificationManager } from "@/components/admin/GamificationManager";
 
 const moduleSchema = z.object({
   title: z.string().trim().min(3, "O título deve ter pelo menos 3 caracteres").max(200),
@@ -200,7 +203,7 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="modules" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-4xl">
+          <TabsList className="grid w-full grid-cols-4 lg:grid-cols-9 max-w-6xl">
             <TabsTrigger value="modules">
               <BookOpen className="mr-2 h-4 w-4" />
               Módulos
@@ -212,6 +215,14 @@ const Admin = () => {
             <TabsTrigger value="labs">
               <Beaker className="mr-2 h-4 w-4" />
               Labs
+            </TabsTrigger>
+            <TabsTrigger value="users">
+              <Users className="mr-2 h-4 w-4" />
+              Usuários
+            </TabsTrigger>
+            <TabsTrigger value="gamification">
+              <Award className="mr-2 h-4 w-4" />
+              Gamificação
             </TabsTrigger>
             <TabsTrigger value="partners">
               <Handshake className="mr-2 h-4 w-4" />
@@ -388,6 +399,14 @@ const Admin = () => {
 
           <TabsContent value="team">
             <TeamManager />
+          </TabsContent>
+
+          <TabsContent value="users">
+            <UsersManager />
+          </TabsContent>
+
+          <TabsContent value="gamification">
+            <GamificationManager />
           </TabsContent>
 
           <TabsContent value="analytics">
