@@ -51,6 +51,7 @@ export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
     aprovado: boolean;
     recomendacoes?: string;
   } | null>(null);
+  const [finalizando, setFinalizando] = useState(false);
 
   useEffect(() => {
     loadQuiz();
@@ -160,8 +161,9 @@ export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
   };
 
   const finalizarQuiz = async () => {
-    if (!user || !quiz) return;
+    if (!user || !quiz || finalizando) return;
 
+    setFinalizando(true);
     try {
       const tempoTotal = Math.floor((Date.now() - tempoInicio) / 1000);
       
@@ -273,6 +275,8 @@ export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
     } catch (error) {
       console.error("Erro ao finalizar quiz:", error);
       toast({ title: "Erro ao finalizar quiz", variant: "destructive" });
+    } finally {
+      setFinalizando(false);
     }
   };
 
@@ -512,8 +516,8 @@ export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
               Próxima
             </Button>
           ) : (
-            <Button onClick={finalizarQuiz}>
-              Finalizar Quiz
+            <Button onClick={finalizarQuiz} disabled={finalizando}>
+              {finalizando ? "Finalizando..." : "Finalizar Quiz"}
             </Button>
           )}
         </div>
