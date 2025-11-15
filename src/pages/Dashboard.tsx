@@ -240,9 +240,17 @@ const Dashboard = () => {
               {modules.map((module) => (
                 <Card key={module.id} className="overflow-hidden hover:shadow-xl transition-smooth group cursor-pointer">
                   <div className="h-48 bg-gradient-accent relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <GraduationCap className="h-20 w-20 text-white/30" />
-                    </div>
+                    {module.thumbnail_url ? (
+                      <img 
+                        src={module.thumbnail_url} 
+                        alt={module.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <GraduationCap className="h-20 w-20 text-white/30" />
+                      </div>
+                    )}
                   </div>
                   <div className="p-6">
                     <div className="flex items-center gap-2 mb-2">
