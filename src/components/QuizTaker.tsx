@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { quizService, Quiz, QuizPergunta, QuizAlternativa } from "@/services/quizService";
 import { quizGamificationService } from "@/services/quizGamificationService";
+import { progressService } from "@/services/progressService";
 import { useAuth } from "@/hooks/useAuth";
 import { Clock, CheckCircle, XCircle, Trophy, TrendingUp, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -255,6 +256,11 @@ export default function QuizTaker({ quizId, moduleId, onComplete }: QuizTakerPro
         aprovado,
         tempo_gasto_segundos: tempoTotal
       });
+
+      // Marcar aula como concluída se aprovado
+      if (aprovado && quiz.aula_id) {
+        await progressService.completeLesson(user.id, quiz.aula_id);
+      }
 
       // Buscar recomendações
       const recomendacoes = await quizService.getUserRecommendations(user.id, quizId);
