@@ -1,353 +1,214 @@
 import { useState, useEffect } from "react";
-import { adminService } from "@/services/adminService";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Users, 
-  Shield, 
-  ShieldOff, 
-  GraduationCap,
-  Search,
-  Filter,
-  UserCog
-} from "lucide-react";
 import { toast } from "sonner";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { Users, Shield, ShieldOff, Search } from "lucide-react";
 
-export const UsersManager = () => {
-  const [users, setUsers] = useState<any[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+interface UserWithRole {
+  id: string;
+  email: string;
+  full_name: string;
+  created_at: string;
+  role: "admin" | "student" | null;
+}
+
+export function UsersManager() {
+  const [users, setUsers] = useState<UserWithRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [selectedUser, setSelectedUser] = useState<any>(null);
-  const [actionDialog, setActionDialog] = useState<"promote" | "revoke" | "instructor" | null>(null);
+  const [processing, setProcessing] = useState<string | null>(null);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
-  useEffect(() => {
-    filterUsers();
-  }, [users, searchTerm, roleFilter]);
-
   const loadUsers = async () => {
     try {
-      setLoading(true);
-      const data = await adminService.getAllUsers();
-      setUsers(data);
-    } catch (error) {
-      console.error("Erro ao carregar usuários:", error);
-      toast.error("Erro ao carregar usuários");
+      // Buscar perfis de usuários
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name, created_at")
+        .order("created_at", { ascending: false });
+
+      if (profilesError) throw profilesError;
+
+      // Buscar roles dos usuários
+      const { data: roles, error: rolesError } = await supabase
+        .from("user_roles")
+        .select("user_id, role");
+
+      if (rolesError) throw rolesError;
+
+      // Para emails, vamos usar placeholder por enquanto
+      const usersWithRoles: UserWithRole[] = (profiles || []).map((profile) => {
+        const userRole = roles?.find((r) => r.user_id === profile.id);
+
+        return {
+          id: profile.id,
+          email: `user-${profile.id.slice(0, 8)}@email.com`,
+          full_name: profile.full_name,
+          created_at: profile.created_at || "",
+          role: userRole?.role as "admin" | "student" | null,
+        };
+      });
+
+      setUsers(usersWithRoles);
+    } catch (error: any) {
+      toast.error("Erro ao carregar usuários", {
+        description: error.message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const filterUsers = () => {
-    let filtered = [...users];
+  const handlePromoteToAdmin = async (userId: string, userName: string) => {
+    if (!confirm(`Tornar "${userName}" administrador?`)) return;
 
-    // Filtrar por termo de busca
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (u) =>
-          u.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          u.id?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    // Filtrar por papel
-    if (roleFilter !== "all") {
-      filtered = filtered.filter((u) => u.papel === roleFilter);
-    }
-
-    setFilteredUsers(filtered);
-  };
-
-  const handlePromoteToAdmin = async () => {
-    if (!selectedUser) return;
-    
+    setProcessing(userId);
     try {
-      await adminService.promoteToAdmin(selectedUser.id);
-      toast.success(`${selectedUser.full_name} promovido a Admin!`);
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+
+      if (existingRole) {
+        const { error } = await supabase
+          .from("user_roles")
+          .update({ role: "admin" })
+          .eq("user_id", userId);
+
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("user_roles")
+          .insert({ user_id: userId, role: "admin" });
+
+        if (error) throw error;
+      }
+
+      toast.success(`${userName} agora é administrador`);
       loadUsers();
-    } catch (error) {
-      console.error("Erro ao promover:", error);
-      toast.error("Erro ao promover usuário");
+    } catch (error: any) {
+      toast.error("Erro ao promover usuário", {
+        description: error.message,
+      });
     } finally {
-      setActionDialog(null);
-      setSelectedUser(null);
+      setProcessing(null);
     }
   };
 
-  const handleRevokeAdmin = async () => {
-    if (!selectedUser) return;
-    
+  const handleRemoveAdmin = async (userId: string, userName: string) => {
+    if (!confirm(`Remover privilégios de admin de "${userName}"?`)) return;
+
+    setProcessing(userId);
     try {
-      await adminService.revokeAdmin(selectedUser.id);
-      toast.success(`Admin removido de ${selectedUser.full_name}`);
+      const { error } = await supabase
+        .from("user_roles")
+        .update({ role: "student" })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      toast.success(`${userName} não é mais administrador`);
       loadUsers();
-    } catch (error) {
-      console.error("Erro ao remover admin:", error);
-      toast.error("Erro ao remover admin");
+    } catch (error: any) {
+      toast.error("Erro ao remover admin", {
+        description: error.message,
+      });
     } finally {
-      setActionDialog(null);
-      setSelectedUser(null);
+      setProcessing(null);
     }
   };
 
-  const handlePromoteToInstructor = async () => {
-    if (!selectedUser) return;
-    
-    try {
-      await adminService.promoteToInstructor(selectedUser.id);
-      toast.success(`${selectedUser.full_name} promovido a Instrutor!`);
-      loadUsers();
-    } catch (error) {
-      console.error("Erro ao promover:", error);
-      toast.error("Erro ao promover usuário");
-    } finally {
-      setActionDialog(null);
-      setSelectedUser(null);
-    }
-  };
-
-  const getRoleBadge = (papel: string) => {
-    switch (papel) {
-      case "admin":
-        return <Badge className="bg-red-500">Admin</Badge>;
-      case "instrutor":
-        return <Badge className="bg-blue-500">Instrutor</Badge>;
-      default:
-        return <Badge variant="outline">Aluno</Badge>;
-    }
-  };
+  const filteredUsers = users.filter(
+    (user) =>
+      user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (loading) {
-    return (
-      <Card className="p-12 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-        <p className="text-muted-foreground">Carregando usuários...</p>
-      </Card>
-    );
+    return <div className="text-center py-8">Carregando...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filtros */}
-      <Card className="p-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por nome ou ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          
-          <div className="w-full md:w-48">
-            <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger>
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="aluno">Alunos</SelectItem>
-                <SelectItem value="instrutor">Instrutores</SelectItem>
-                <SelectItem value="admin">Admins</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </Card>
-
-      {/* Lista de usuários */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-semibold">
-            Usuários ({filteredUsers.length})
-          </h3>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          Gerenciar Usuários
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Search className="h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome ou email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
         </div>
 
         {filteredUsers.length === 0 ? (
-          <Card className="p-12 text-center">
-            <Users className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <p className="text-muted-foreground">Nenhum usuário encontrado</p>
-          </Card>
+          <div className="text-center py-8 text-muted-foreground">
+            {searchTerm ? "Nenhum usuário encontrado" : "Nenhum usuário cadastrado"}
+          </div>
         ) : (
-          <div className="grid gap-4">
+          <div className="space-y-2">
             {filteredUsers.map((user) => (
-              <Card key={user.id} className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex gap-4">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <UserCog className="h-6 w-6 text-primary" />
-                    </div>
-                    
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-semibold">{user.full_name}</h4>
-                        {getRoleBadge(user.papel)}
+              <Card key={user.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium">{user.full_name}</h4>
+                        {user.role === "admin" && (
+                          <Badge variant="default" className="gap-1">
+                            <Shield className="h-3 w-3" />
+                            Admin
+                          </Badge>
+                        )}
                       </div>
-                      
-                      <p className="text-sm text-muted-foreground mb-2">
-                        ID: {user.id.substring(0, 8)}...
+                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Cadastrado em {new Date(user.created_at).toLocaleDateString("pt-BR")}
                       </p>
-                      
-                      {user.institution && (
-                        <p className="text-sm text-muted-foreground">
-                          📍 {user.institution}
-                        </p>
-                      )}
-                      
-                      {user.user_stats && (
-                        <div className="flex gap-4 mt-2 text-xs">
-                          <span>⭐ {user.user_stats.total_xp} XP</span>
-                          <span>🔥 {user.user_stats.streak_days} dias</span>
-                          <span>📚 {user.user_stats.modules_completed} módulos</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
-
-                  <div className="flex gap-2">
-                    {user.papel === "aluno" && (
-                      <>
+                    <div className="flex gap-2">
+                      {user.role === "admin" ? (
                         <Button
-                          size="sm"
                           variant="outline"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setActionDialog("instructor");
-                          }}
-                        >
-                          <GraduationCap className="h-4 w-4 mr-2" />
-                          Instrutor
-                        </Button>
-                        <Button
                           size="sm"
-                          onClick={() => {
-                            setSelectedUser(user);
-                            setActionDialog("promote");
-                          }}
+                          onClick={() => handleRemoveAdmin(user.id, user.full_name)}
+                          disabled={processing === user.id}
+                        >
+                          <ShieldOff className="h-4 w-4 mr-2" />
+                          Remover Admin
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => handlePromoteToAdmin(user.id, user.full_name)}
+                          disabled={processing === user.id}
                         >
                           <Shield className="h-4 w-4 mr-2" />
-                          Promover Admin
+                          Tornar Admin
                         </Button>
-                      </>
-                    )}
-                    
-                    {user.papel === "instrutor" && (
-                      <Button
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setActionDialog("promote");
-                        }}
-                      >
-                        <Shield className="h-4 w-4 mr-2" />
-                        Promover Admin
-                      </Button>
-                    )}
-                    
-                    {user.papel === "admin" && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setActionDialog("revoke");
-                        }}
-                      >
-                        <ShieldOff className="h-4 w-4 mr-2" />
-                        Remover Admin
-                      </Button>
-                    )}
+                      )}
+                    </div>
                   </div>
-                </div>
+                </CardContent>
               </Card>
             ))}
           </div>
         )}
-      </div>
-
-      {/* Diálogos de confirmação */}
-      <AlertDialog open={actionDialog === "promote"} onOpenChange={() => setActionDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Promover a Admin?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a promover <strong>{selectedUser?.full_name}</strong> a 
-              Administrador. Este usuário terá acesso total à plataforma.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePromoteToAdmin}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={actionDialog === "revoke"} onOpenChange={() => setActionDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remover Admin?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a remover os privilégios de admin de{" "}
-              <strong>{selectedUser?.full_name}</strong>. O usuário voltará a ser aluno.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRevokeAdmin} className="bg-destructive">
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={actionDialog === "instructor"} onOpenChange={() => setActionDialog(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Promover a Instrutor?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Você está prestes a promover <strong>{selectedUser?.full_name}</strong> a 
-              Instrutor. Este usuário poderá criar e editar conteúdo.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handlePromoteToInstructor}>
-              Confirmar
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      </CardContent>
+    </Card>
   );
-};
+}
