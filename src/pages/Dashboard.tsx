@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modulesCompleted, setModulesCompleted] = useState<number>(0);
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -65,9 +66,61 @@ const Dashboard = () => {
       // Fetch available modules
       const {
         data: modulesData
-      } = await supabase.from("modules").select("*").eq("published", true).order("order_index");
+      } = await supabase
+        .from("modules")
+        .select("*")
+        .eq("published", true)
+        .order("order_index");
       if (modulesData) {
         setModules(modulesData);
+
+        // Compute modules completed based on lesson progress
+        if (modulesData.length > 0) {
+          const moduleIds = modulesData.map((m) => m.id);
+          const { data: lessonsData } = await supabase
+            .from("lessons")
+            .select("id,module_id,published")
+            .in("module_id", moduleIds)
+            .eq("published", true);
+
+          const lessonIds = (lessonsData || []).map((l: any) => l.id);
+          if (lessonIds.length > 0) {
+            const { data: progressData } = await supabase
+              .from("lesson_progress")
+              .select("lesson_id,status")
+              .eq("user_id", session.user.id)
+              .in("lesson_id", lessonIds);
+
+            const totals = new Map<string, number>();
+            const completed = new Map<string, number>();
+
+            (lessonsData || []).forEach((l: any) => {
+              totals.set(l.module_id, (totals.get(l.module_id) || 0) + 1);
+            });
+
+            (progressData || []).forEach((p: any) => {
+              const lesson = (lessonsData || []).find((l: any) => l.id === p.lesson_id);
+              if (lesson && p.status === "concluido") {
+                completed.set(
+                  lesson.module_id,
+                  (completed.get(lesson.module_id) || 0) + 1
+                );
+              }
+            });
+
+            let count = 0;
+            totals.forEach((total, moduleId) => {
+              if (total > 0 && (completed.get(moduleId) || 0) >= total) {
+                count++;
+              }
+            });
+            setModulesCompleted(count);
+          } else {
+            setModulesCompleted(0);
+          }
+        } else {
+          setModulesCompleted(0);
+        }
       }
       setLoading(false);
     };
@@ -149,7 +202,7 @@ const Dashboard = () => {
           <Card className="p-6">
             <div className="flex items-center justify-between mb-2">
               <BookOpen className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">{stats?.modules_completed || 0}</span>
+              <span className="text-2xl font-bold">{modulesCompleted}</span>
             </div>
             <p className="text-sm text-muted-foreground">Módulos Concluídos</p>
             <p className="text-xs text-muted-foreground mt-1">De {modules.length}</p>
@@ -171,12 +224,12 @@ const Dashboard = () => {
             <div>
               <h2 className="text-2xl font-semibold mb-1">Seu Progresso</h2>
               <p className="text-muted-foreground">
-                {stats?.modules_completed || 0} de {modules.length} módulos concluídos
+                {modulesCompleted} de {modules.length} módulos concluídos
               </p>
             </div>
             <Award className="h-10 w-10 text-secondary" />
           </div>
-          <Progress value={modules.length > 0 ? (stats?.modules_completed || 0) / modules.length * 100 : 0} className="h-3" />
+          <Progress value={modules.length > 0 ? (modulesCompleted / modules.length) * 100 : 0} className="h-3" />
         </Card>
 
         {/* Available Modules */}
