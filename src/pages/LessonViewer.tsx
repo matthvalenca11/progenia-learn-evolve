@@ -154,10 +154,10 @@ export default function LessonViewer() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate(`/module/${lesson.module_id}`)}
         >
           <ChevronLeft className="h-4 w-4 mr-2" />
-          Voltar
+          Voltar ao Módulo
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
