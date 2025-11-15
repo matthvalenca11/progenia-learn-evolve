@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -16,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface QuizTakerProps {
   quizId: string;
+  moduleId?: string;
   onComplete?: () => void;
 }
 
@@ -27,9 +29,10 @@ interface RespostaLocal {
   tempoResposta: number;
 }
 
-export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
+export default function QuizTaker({ quizId, moduleId, onComplete }: QuizTakerProps) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [perguntas, setPerguntas] = useState<(QuizPergunta & { alternativas: QuizAlternativa[] })[]>([]);
@@ -351,7 +354,16 @@ export default function QuizTaker({ quizId, onComplete }: QuizTakerProps) {
                 Tentar Novamente
               </Button>
             )}
-            <Button variant="outline" onClick={onComplete}>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (moduleId) {
+                  navigate(`/module/${moduleId}`);
+                } else if (onComplete) {
+                  onComplete();
+                }
+              }}
+            >
               Voltar
             </Button>
           </div>
