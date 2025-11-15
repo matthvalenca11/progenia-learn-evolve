@@ -148,12 +148,38 @@ export function LessonsManager() {
 
     setUploading(true);
     try {
+      // Preparar dados básicos da aula
+      const lessonData: any = {
+        module_id: selectedModuleId,
+        title: formData.title.trim(),
+        content_type: formData.content_type,
+        descricao_curta: formData.descricao_curta.trim() || null,
+        duration_minutes: formData.duration_minutes || null,
+        published: formData.published,
+      };
+
+      if (formData.content_type === "video") {
+        lessonData.video_external_url = formData.video_external_url.trim() || null;
+      }
+
+      if (formData.content_type === "artigo") {
+        lessonData.conteudo_rich_text = formData.conteudo_rich_text;
+      }
+
+      // Se for nova aula, criar primeiro para obter o ID
+      let lessonId = editing;
+      if (editing === "new") {
+        const newLesson = await lessonService.createLesson(lessonData);
+        lessonId = newLesson.id;
+      }
+
+      // Agora fazer upload dos arquivos usando o ID real da aula
       let videoStoragePath = null;
       let assetsData: any[] = [];
 
       if (videoFile) {
         const fileName = storageService.generateUniqueFileName(videoFile.name);
-        const path = `${selectedModuleId}/${editing === "new" ? "temp" : editing}/${fileName}`;
+        const path = `${selectedModuleId}/${lessonId}/${fileName}`;
         const result = await storageService.uploadFile({
           bucket: "lesson-videos",
           path,
@@ -163,7 +189,6 @@ export function LessonsManager() {
       }
 
       if (assetFiles.length > 0) {
-        const lessonId = editing === "new" ? "temp" : editing;
         const uploads = await Promise.all(
           assetFiles.map(async (file) => {
             const fileName = storageService.generateUniqueFileName(file.name);
@@ -183,30 +208,19 @@ export function LessonsManager() {
         assetsData = uploads;
       }
 
-      const lessonData: any = {
-        module_id: selectedModuleId,
-        title: formData.title.trim(),
-        content_type: formData.content_type,
-        descricao_curta: formData.descricao_curta.trim() || null,
-        duration_minutes: formData.duration_minutes || null,
-        published: formData.published,
-      };
-
-      if (formData.content_type === "video") {
-        lessonData.video_storage_path = videoStoragePath;
-        lessonData.video_external_url = formData.video_external_url.trim() || null;
-      }
-
-      if (formData.content_type === "artigo") {
-        lessonData.conteudo_rich_text = formData.conteudo_rich_text;
-      }
-
-      if (assetsData.length > 0) {
-        lessonData.assets = assetsData;
+      // Atualizar aula com os paths dos arquivos
+      if (videoStoragePath || assetsData.length > 0) {
+        const updateData: any = {};
+        if (videoStoragePath) {
+          updateData.video_storage_path = videoStoragePath;
+        }
+        if (assetsData.length > 0) {
+          updateData.assets = assetsData;
+        }
+        await lessonService.updateLesson(lessonId, updateData);
       }
 
       if (editing === "new") {
-        await lessonService.createLesson(lessonData);
         toast({
           title: "Aula criada",
           description: "A aula foi criada com sucesso",
