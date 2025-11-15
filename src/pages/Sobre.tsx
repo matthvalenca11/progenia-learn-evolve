@@ -206,7 +206,7 @@ const Sobre = () => {
             {[
               { icon: "👨‍⚕️", title: "Profissionais da Saúde no Brasil", count: "300.000+", subtitle: "Registrados no COFFITO" },
               { icon: "🎓", title: "Cursos de Graduação", count: "600+", subtitle: "Fisioterapia, Fonoaudiologia e TO" },
-              { icon: "🏥", title: "Terapeutas Ocupacionais", count: "20.000+", subtitle: "Profissionais ativos" }
+              { icon: "🏥", title: "Clínicas e centros de reabilitação física", count: "20.000+", subtitle: "Profissionais ativos" }
             ].map((audience, i) => (
               <Card key={i} className="p-6 text-center hover:shadow-lg transition-shadow">
                 <div className="text-5xl mb-3">{audience.icon}</div>
