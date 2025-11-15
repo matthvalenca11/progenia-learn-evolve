@@ -215,6 +215,16 @@ export function LessonsManager() {
 
     setUploading(true);
     try {
+      // Validação: quiz publicado precisa ter ao menos 1 pergunta
+      if (formData.content_type === "quiz" && formData.published && perguntas.length === 0) {
+        toast({
+          variant: "destructive",
+          title: "Quiz sem perguntas",
+          description: "Adicione pelo menos 1 pergunta para publicar esta aula como quiz.",
+        });
+        return;
+      }
+
       // Preparar dados básicos da aula
       const lessonData: any = {
         module_id: selectedModuleId,
