@@ -314,7 +314,7 @@ const Sobre = () => {
       {/* Footer */}
       <footer className="border-t border-border py-8 px-4">
         <div className="container mx-auto max-w-6xl text-center text-muted-foreground">
-          <p>© 2024 ProGenia - Learn & Evolve. Todos os direitos reservados.</p>
+          <p>© 2026 ProGenia - Learn & Evolve. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

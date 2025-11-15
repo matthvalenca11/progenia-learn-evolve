@@ -167,7 +167,7 @@ const Landing = () => {
               <img src={logo} alt="ProGenia" className="h-8" />
             </div>
             <p className="text-muted-foreground text-sm">
-              © 2024 ProGenia. All rights reserved.
+              © 2026 ProGenia. Todos os direitos reservados.
             </p>
           </div>
         </div>
