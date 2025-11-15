@@ -230,6 +230,18 @@ export default function LessonViewer() {
         )}
       </div>
 
+      {/* Sobre esta aula */}
+      {lesson.descricao_curta && lesson.content_type !== "quiz" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Sobre esta aula</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">{lesson.descricao_curta}</p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Conteúdo Principal */}
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -339,17 +351,6 @@ export default function LessonViewer() {
             </>
           )}
 
-          {/* Descrição */}
-          {lesson.descricao_curta && lesson.content_type !== "quiz" && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Sobre esta aula</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{lesson.descricao_curta}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Sidebar */}
