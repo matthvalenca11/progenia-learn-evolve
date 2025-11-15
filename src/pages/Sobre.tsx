@@ -204,7 +204,7 @@ const Sobre = () => {
 
           <div className="grid md:grid-cols-3 gap-6 mb-12">
             {[
-              { icon: "👨‍⚕️", title: "Fisioterapeutas no Brasil", count: "300.000+", subtitle: "Registrados no COFFITO" },
+              { icon: "👨‍⚕️", title: "Profissionais da Saúde no Brasil", count: "300.000+", subtitle: "Registrados no COFFITO" },
               { icon: "🎓", title: "Cursos de Graduação", count: "600+", subtitle: "Fisioterapia, Fonoaudiologia e TO" },
               { icon: "🏥", title: "Terapeutas Ocupacionais", count: "20.000+", subtitle: "Profissionais ativos" }
             ].map((audience, i) => (
