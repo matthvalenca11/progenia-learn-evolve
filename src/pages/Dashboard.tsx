@@ -78,15 +78,16 @@ const Dashboard = () => {
         
         // Fetch user enrollments
         const enrollments = await enrollmentService.getUserEnrollments(session.user.id);
-        setEnrolledModules(new Set(enrollments.map(e => e.module_id)));
+        const enrolledModuleIds = new Set(enrollments.map(e => e.module_id));
+        setEnrolledModules(enrolledModuleIds);
 
-        // Compute modules completed based on lesson progress
-        if (modulesData.length > 0) {
-          const moduleIds = modulesData.map((m) => m.id);
+        // Compute modules completed based on lesson progress (only enrolled modules)
+        if (enrolledModuleIds.size > 0) {
+          const enrolledModuleIdsArray = Array.from(enrolledModuleIds);
           const { data: lessonsData } = await supabase
             .from("lessons")
             .select("id,module_id,published")
-            .in("module_id", moduleIds)
+            .in("module_id", enrolledModuleIdsArray)
             .eq("published", true);
 
           const lessonIds = (lessonsData || []).map((l: any) => l.id);
@@ -261,7 +262,7 @@ const Dashboard = () => {
               <span className="text-2xl font-bold">{modulesCompleted}</span>
             </div>
             <p className="text-sm text-muted-foreground">Módulos Concluídos</p>
-            <p className="text-xs text-muted-foreground mt-1">De {modules.length}</p>
+            <p className="text-xs text-muted-foreground mt-1">De {enrolledModules.size} matriculados</p>
           </Card>
 
           <Card className="p-6">
@@ -280,12 +281,12 @@ const Dashboard = () => {
             <div>
               <h2 className="text-2xl font-semibold mb-1">Seu Progresso</h2>
               <p className="text-muted-foreground">
-                {modulesCompleted} de {modules.length} módulos concluídos
+                {modulesCompleted} de {enrolledModules.size} módulos matriculados
               </p>
             </div>
             <Award className="h-10 w-10 text-secondary" />
           </div>
-          <Progress value={modules.length > 0 ? (modulesCompleted / modules.length) * 100 : 0} className="h-3" />
+          <Progress value={enrolledModules.size > 0 ? (modulesCompleted / enrolledModules.size) * 100 : 0} className="h-3" />
         </Card>
 
         {/* Available Modules */}
