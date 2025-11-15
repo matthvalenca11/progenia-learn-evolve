@@ -146,6 +146,7 @@ export type Database = {
           content_data: Json | null
           content_type: string
           content_url: string | null
+          conteudo_rich_text: string | null
           created_at: string | null
           descricao_curta: string | null
           duration_minutes: number | null
@@ -165,6 +166,7 @@ export type Database = {
           content_data?: Json | null
           content_type: string
           content_url?: string | null
+          conteudo_rich_text?: string | null
           created_at?: string | null
           descricao_curta?: string | null
           duration_minutes?: number | null
@@ -184,6 +186,7 @@ export type Database = {
           content_data?: Json | null
           content_type?: string
           content_url?: string | null
+          conteudo_rich_text?: string | null
           created_at?: string | null
           descricao_curta?: string | null
           duration_minutes?: number | null
