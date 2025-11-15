@@ -287,7 +287,7 @@ export default function LessonViewer() {
           )}
 
           {/* Descrição */}
-          {lesson.descricao_curta && (
+          {lesson.descricao_curta && lesson.content_type !== "quiz" && (
             <Card>
               <CardHeader>
                 <CardTitle>Sobre esta aula</CardTitle>
