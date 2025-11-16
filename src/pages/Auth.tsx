@@ -41,19 +41,17 @@ const Auth = () => {
   });
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/dashboard");
-      }
-    };
-    checkUser();
-
-    // Listen for auth changes
+    // 1) Ouvir mudanças de auth primeiro
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        navigate("/dashboard");
+        navigate('/dashboard');
+      }
+    });
+
+    // 2) Verificar estado atual com getUser (evita sessão local "fantasma")
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        navigate('/dashboard');
       }
     });
 

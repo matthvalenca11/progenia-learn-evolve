@@ -60,11 +60,25 @@ export const authService = {
    * Fazer logout
    */
   async signOut() {
-    const { error } = await supabase.auth.signOut({ scope: 'local' });
-    if (error) throw error;
-    
-    // Limpar localStorage manualmente como garantia
-    localStorage.removeItem('sb-crjftqlcibdoludzgmqx-auth-token');
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'global' });
+      // Ignorar erro de sessão inexistente, mas avisar no console
+      if (error && !String(error.message || '').toLowerCase().includes('session not found')) {
+        console.warn('signOut warning:', error.message);
+      }
+    } catch (e) {
+      console.warn('signOut error:', e);
+    } finally {
+      // Limpeza defensiva: remover quaisquer tokens persistidos
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('sb-') && key.endsWith('-auth-token')) {
+            localStorage.removeItem(key);
+          }
+        }
+      } catch {}
+    }
   },
 
   /**

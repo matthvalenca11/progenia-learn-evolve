@@ -84,12 +84,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    await authService.signOut();
-    setUser(null);
-    setSession(null);
-    setProfile(null);
-    setUserRole(null);
-    setIsAdmin(false);
+    try {
+      await authService.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      setUserRole(null);
+      setIsAdmin(false);
+    }
   };
 
   const updateProfile = async (updates: any) => {
