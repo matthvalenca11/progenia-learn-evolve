@@ -4,42 +4,65 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
-import AITutor from "./components/AITutor";
-import Landing from "./pages/Landing";
-import Sobre from "./pages/Sobre";
-import Auth from "./pages/Auth";
-import Dashboard from "./pages/Dashboard";
-import Admin from "./pages/Admin";
-import Profile from "./pages/Profile";
-import ModuleViewer from "./pages/ModuleViewer";
-import LessonViewer from "./pages/LessonViewer";
-import NotFound from "./pages/NotFound";
+import AITutor from "@/components/AITutor";
+import Landing from "@/pages/Landing";
+import Sobre from "@/pages/Sobre";
+import Auth from "@/pages/Auth";
+import Dashboard from "@/pages/Dashboard";
+import Admin from "@/pages/Admin";
+import Profile from "@/pages/Profile";
+import ModuleViewer from "@/pages/ModuleViewer";
+import LessonViewer from "@/pages/LessonViewer";
+import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   const { user } = useAuth();
   const location = useLocation();
-  
-  // Don't show AI Tutor on landing and about pages
-  const shouldShowAITutor = user && location.pathname !== "/" && location.pathname !== "/sobre";
-  
+
+  // Não mostrar o tutor na landing/sobre
+  const shouldShowAITutor =
+    user && location.pathname !== "/" && location.pathname !== "/sobre";
+
   return (
-    <>
-      <Routes>
-        <Route path="/" element={<Landing />} />
-        <Route path="/sobre" element={<Sobre />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/module/:moduleId" element={<ModuleViewer />} />
-        <Route path="/lesson/:lessonId" element={<LessonViewer />} />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      {shouldShowAITutor && <AITutor />}
-    </>
+    <div
+      className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden"
+      style={{
+        // safe area do iOS (notch e barra inferior)
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
+      {/* Conteúdo principal rolável, com padding global para mobile */}
+      <main className="flex-1 flex flex-col overflow-y-auto px-4 pb-8 pt-2 md:px-8 md:pb-10 md:pt-4">
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/sobre" element={<Sobre />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/module/:moduleId" element={<ModuleViewer />} />
+          <Route path="/lesson/:lessonId" element={<LessonViewer />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </main>
+
+      {/* Tutor de IA: só em telas médias pra cima, pra não matar o mobile */}
+      {shouldShowAITutor && (
+        <div className="hidden md:block">
+          {/* Se o AITutor já tiver posição própria, ele continua controlando.
+             Se você quiser forçar posição flutuante:
+             <div className="fixed bottom-4 right-4 z-40">
+               <AITutor />
+             </div>
+          */}
+          <AITutor />
+        </div>
+      )}
+    </div>
   );
 };
 
