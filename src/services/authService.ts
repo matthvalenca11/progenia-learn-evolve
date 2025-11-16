@@ -60,8 +60,11 @@ export const authService = {
    * Fazer logout
    */
   async signOut() {
-    const { error } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut({ scope: 'local' });
     if (error) throw error;
+    
+    // Limpar localStorage manualmente como garantia
+    localStorage.removeItem('sb-crjftqlcibdoludzgmqx-auth-token');
   },
 
   /**
