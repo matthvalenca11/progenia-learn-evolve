@@ -224,7 +224,9 @@ export const capsulaService = {
   ): Promise<string> {
     const bucket = tipo === "video" ? "lesson-videos" : "lesson-assets";
 
-    const path = `capsulas/${capsulaId}/${file.name}`;
+    // Usar nome de arquivo seguro para evitar erros de key (espaços, acentos, etc.)
+    const safeName = storageService.generateUniqueFileName(file.name);
+    const path = `capsulas/${capsulaId}/${safeName}`;
 
     const result = await storageService.uploadFile({
       bucket: bucket as any,
