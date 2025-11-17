@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { GraduationCap, Trophy, Clock, BookOpen, LogOut, Zap, Award, TrendingUp, UserPlus, UserMinus } from "lucide-react";
+import { GraduationCap, Trophy, Clock, BookOpen, LogOut, Zap, Award, TrendingUp, UserPlus, UserMinus, Sparkles, ArrowRight } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
 import { enrollmentService } from "@/services/enrollmentService";
+import { useCapsulasRecomendadas, useCapsulaInacabada } from "@/hooks/useCapsulas";
+
 interface UserProfile {
   full_name: string;
   institution?: string;
@@ -36,6 +38,11 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [modulesCompleted, setModulesCompleted] = useState<number>(0);
   const [enrolledModules, setEnrolledModules] = useState<Set<string>>(new Set());
+  const [userId, setUserId] = useState<string | undefined>(undefined);
+
+  const { capsulas: capsulaRecomendadas, loading: loadingRecomendadas } = useCapsulasRecomendadas(userId, 3);
+  const { capsula: capsulaInacabada, loading: loadingInacabada } = useCapsulaInacabada(userId);
+
   useEffect(() => {
     const checkAuth = async () => {
       const {
@@ -47,6 +54,8 @@ const Dashboard = () => {
         navigate("/auth");
         return;
       }
+
+      setUserId(session.user.id);
 
       // Fetch user profile
       const {
@@ -288,10 +297,86 @@ const Dashboard = () => {
           <Progress value={enrolledModules.size > 0 ? (modulesCompleted / enrolledModules.size) * 100 : 0} className="h-3" />
         </Card>
 
+        {/* Cápsulas Recomendadas */}
+        {!loadingRecomendadas && capsulaRecomendadas.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-6">
+              <Sparkles className="h-6 w-6 text-accent" />
+              <h2 className="text-3xl font-bold">Seu Caminho Hoje</h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {capsulaRecomendadas.map((capsula) => (
+                <Card 
+                  key={capsula.id}
+                  className="cursor-pointer hover:shadow-lg transition-smooth border-border bg-card hover:border-accent overflow-hidden"
+                  onClick={() => navigate(`/capsula/${capsula.id}`)}
+                >
+                  <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
+                    {capsula.visual_path && capsula.tipo_visual === "imagem" ? (
+                      <img 
+                        src={capsula.visual_path} 
+                        alt={capsula.titulo}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Sparkles className="h-12 w-12 text-muted-foreground" />
+                    )}
+                  </div>
+                  <div className="p-6">
+                    <div className="inline-block px-2 py-1 bg-accent/10 text-accent text-xs rounded-full mb-2">
+                      {capsula.categoria}
+                    </div>
+                    <h3 className="font-semibold text-lg mb-2">{capsula.titulo}</h3>
+                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{capsula.pergunta_gatilho}</p>
+                    <Button size="sm" className="w-full">
+                      Começar <ArrowRight className="h-4 w-4 ml-2" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Continuar de Onde Parou */}
+        {!loadingInacabada && capsulaInacabada && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">Continuar de Onde Parou</h2>
+            <Card 
+              className="cursor-pointer hover:shadow-lg transition-smooth border-accent bg-card overflow-hidden"
+              onClick={() => navigate(`/capsula/${capsulaInacabada.id}`)}
+            >
+              <div className="flex flex-col md:flex-row">
+                <div className="aspect-video md:w-48 bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
+                  {capsulaInacabada.visual_path && capsulaInacabada.tipo_visual === "imagem" ? (
+                    <img 
+                      src={capsulaInacabada.visual_path} 
+                      alt={capsulaInacabada.titulo}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <BookOpen className="h-12 w-12 text-muted-foreground" />
+                  )}
+                </div>
+                <div className="p-6 flex-1">
+                  <div className="inline-block px-2 py-1 bg-accent/10 text-accent text-xs rounded-full mb-2">
+                    {capsulaInacabada.categoria}
+                  </div>
+                  <h3 className="font-semibold text-xl mb-2">{capsulaInacabada.titulo}</h3>
+                  <p className="text-muted-foreground mb-4">{capsulaInacabada.pergunta_gatilho}</p>
+                  <Button>
+                    Continuar <ArrowRight className="h-4 w-4 ml-2" />
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {/* Available Modules */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-3xl font-bold">Módulos de Aprendizado</h2>
+            <h2 className="text-3xl font-bold">Explorar Temas</h2>
             
           </div>
 
@@ -324,11 +409,19 @@ const Dashboard = () => {
                       <div className="space-y-2">
                         <Button 
                           className="w-full" 
+                          variant="default" 
+                          onClick={() => navigate(`/modulo/${module.id}/capsulas`)}
+                        >
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Ver Cápsulas
+                        </Button>
+                        <Button 
+                          className="w-full" 
                           variant="outline" 
                           onClick={() => handleStartModule(module.id)}
                         >
                           <BookOpen className="mr-2 h-4 w-4" />
-                          Continuar Módulo
+                          Ver Aulas
                         </Button>
                         <Button 
                           className="w-full" 

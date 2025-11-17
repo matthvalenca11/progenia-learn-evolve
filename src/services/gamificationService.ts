@@ -219,31 +219,80 @@ export const gamificationService = {
         (hoje.getTime() - lastActivity.getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      if (diffDays === 0) {
-        // Mesmo dia, não fazer nada
-        return;
-      } else if (diffDays === 1) {
-        // Dia consecutivo, incrementar
+      if (diffDays === 1) {
+        // Sequência continua
         newStreak += 1;
-        
-        // Verificar se ganhou badge de streak
-        if (newStreak === 7) {
-          await this.checkStreakBadge(userId, 7);
-        } else if (newStreak === 30) {
-          await this.checkStreakBadge(userId, 30);
-        }
-      } else {
-        // Streak quebrado, resetar
+      } else if (diffDays > 1) {
+        // Quebrou a sequência
         newStreak = 1;
       }
+      // Se diffDays === 0, mantém o streak atual (já praticou hoje)
     }
 
     await supabase
       .from("user_stats")
       .update({
         streak_days: newStreak,
-        last_activity_date: hoje.toISOString().split('T')[0],
+        last_activity_date: hoje.toISOString().split("T")[0],
       })
+      .eq("user_id", userId);
+  },
+
+  /**
+   * Registrar conclusão de cápsula e conceder pontos
+   */
+  async rewardCapsulaCompletion(
+    userId: string,
+    capsulaId: string,
+    acertouNaPrimeira: boolean
+  ) {
+    let pontosBase = 5; // Pontos base por cápsula concluída
+    let descricao = "Cápsula concluída";
+
+    if (acertouNaPrimeira) {
+      pontosBase += 5; // Bônus por acertar na primeira tentativa
+      descricao = "Cápsula concluída na primeira tentativa!";
+    }
+
+    await this.addPoints(userId, pontosBase, "capsula", capsulaId, descricao);
+
+    // Verificar conquistas relacionadas a cápsulas
+    await this.checkAndAwardBadges(userId);
+  },
+
+  /**
+   * Adicionar pontos ao usuário
+   */
+  async addPoints(
+    userId: string,
+    pontos: number,
+    origem: string,
+    origemId?: string,
+    descricao?: string
+  ) {
+    // Inserir no histórico de pontos
+    await supabase
+      .from("points_history")
+      .insert({
+        user_id: userId,
+        pontos,
+        origem,
+        origem_id: origemId,
+        descricao,
+      });
+
+    // Atualizar XP total do usuário
+    const { data: stats } = await supabase
+      .from("user_stats")
+      .select("total_xp")
+      .eq("user_id", userId)
+      .single();
+
+    const novoXP = (stats?.total_xp || 0) + pontos;
+
+    await supabase
+      .from("user_stats")
+      .update({ total_xp: novoXP })
       .eq("user_id", userId);
   },
 

@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { capsulaService, Capsula } from "@/services/capsulaService";
+import { gamificationService } from "@/services/gamificationService";
 import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, Sparkles } from "lucide-react";
 import { MRIViewer } from "@/components/labs/MRIViewer";
@@ -28,6 +29,7 @@ export default function CapsulaViewer() {
   const [mostrarResultados, setMostrarResultados] = useState(false);
   const [acertos, setAcertos] = useState(0);
   const [concluida, setConcluida] = useState(false);
+  const [tentativas, setTentativas] = useState(0);
 
   useEffect(() => {
     if (!user) {
@@ -116,6 +118,7 @@ export default function CapsulaViewer() {
 
     setAcertos(totalAcertos);
     setMostrarResultados(true);
+    setTentativas(prev => prev + 1);
 
     // Salvar resultado
     try {
@@ -131,9 +134,19 @@ export default function CapsulaViewer() {
         await capsulaService.marcarConcluida(user.id, capsulaId!);
         setConcluida(true);
         
+        // Conceder pontos de gamificação
+        const acertouNaPrimeira = tentativas === 0;
+        await gamificationService.rewardCapsulaCompletion(
+          user.id,
+          capsulaId!,
+          acertouNaPrimeira
+        );
+        
         toast({
           title: "🎉 Parabéns!",
-          description: "Cápsula concluída com sucesso!",
+          description: acertouNaPrimeira 
+            ? "Cápsula concluída com sucesso! +10 XP (acertou na primeira!)" 
+            : "Cápsula concluída com sucesso! +5 XP",
         });
       }
     } catch (error: any) {

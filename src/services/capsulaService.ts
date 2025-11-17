@@ -402,4 +402,58 @@ export const capsulaService = {
 
     return { total, concluidas, percentual };
   },
+
+  /**
+   * Buscar cápsulas recomendadas para o usuário
+   */
+  async getCapsulaRecomendadas(
+    usuarioId: string,
+    limite: number = 3
+  ): Promise<Capsula[]> {
+    // Buscar cápsulas que o usuário ainda não completou
+    const { data: progressoConcluido } = await supabase
+      .from("capsula_progresso_usuario")
+      .select("capsula_id")
+      .eq("usuario_id", usuarioId)
+      .eq("concluida", true);
+
+    const capsulasConcluidas = progressoConcluido?.map((p) => p.capsula_id) || [];
+
+    // Buscar cápsulas ativas que não foram concluídas
+    let query = supabase
+      .from("capsulas")
+      .select("*, modules:modulo_id(id, title, published)")
+      .eq("ativo", true)
+      .order("ordem", { ascending: true })
+      .limit(limite);
+
+    if (capsulasConcluidas.length > 0) {
+      query = query.not("id", "in", `(${capsulasConcluidas.join(",")})`);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Filtrar apenas cápsulas de módulos publicados
+    return (data || []).filter((c: any) => c.modules?.published) as Capsula[];
+  },
+
+  /**
+   * Buscar cápsula inacabada (iniciada mas não concluída)
+   */
+  async getCapsulaInacabada(usuarioId: string): Promise<Capsula | null> {
+    const { data: progresso } = await supabase
+      .from("capsula_progresso_usuario")
+      .select("capsula_id, capsulas(*)")
+      .eq("usuario_id", usuarioId)
+      .eq("concluida", false)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (!progresso?.capsulas) return null;
+
+    return progresso.capsulas as any;
+  },
 };
