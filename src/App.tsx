@@ -13,6 +13,9 @@ import Admin from "@/pages/Admin";
 import Profile from "@/pages/Profile";
 import ModuleViewer from "@/pages/ModuleViewer";
 import LessonViewer from "@/pages/LessonViewer";
+import CapsulasGrid from "@/pages/CapsulasGrid";
+import CapsulaViewer from "@/pages/CapsulaViewer";
+import CapsulaBuilder from "@/components/admin/CapsulaBuilder";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +48,10 @@ const AppContent = () => {
           <Route path="/profile" element={<Profile />} />
           <Route path="/module/:moduleId" element={<ModuleViewer />} />
           <Route path="/lesson/:lessonId" element={<LessonViewer />} />
+          <Route path="/modulo/:moduleId/capsulas" element={<CapsulasGrid />} />
+          <Route path="/capsula/:capsulaId" element={<CapsulaViewer />} />
+          <Route path="/admin/capsulas/novo/:moduleId" element={<CapsulaBuilder />} />
+          <Route path="/admin/capsulas/editar/:capsulaId" element={<CapsulaBuilder />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
