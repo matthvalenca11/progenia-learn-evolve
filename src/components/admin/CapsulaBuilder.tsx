@@ -37,6 +37,8 @@ export default function CapsulaBuilder() {
 
   const [visualFile, setVisualFile] = useState<File | null>(null);
   const [visualPreview, setVisualPreview] = useState<string>("");
+  const [capaFile, setCapaFile] = useState<File | null>(null);
+  const [capaPreview, setCapaPreview] = useState<string>("");
 
   useEffect(() => {
     if (isEdit && capsulaId) {
@@ -54,6 +56,11 @@ export default function CapsulaBuilder() {
         if (data.visual_path && data.tipo_visual !== "lab") {
           const url = await capsulaService.getVisualUrl(data.tipo_visual as "imagem" | "video", data.visual_path);
           setVisualPreview(url);
+        }
+        // Carregar preview da capa se existir
+        if (data.capa_path) {
+          const capaUrl = await capsulaService.getVisualUrl("imagem", data.capa_path);
+          setCapaPreview(capaUrl);
         }
       }
     } catch (error: any) {
@@ -102,6 +109,13 @@ export default function CapsulaBuilder() {
         );
         await capsulaService.updateCapsula(capsulaIdFinal, { visual_path: path });
         toast({ title: "Arquivo enviado com sucesso!" });
+      }
+
+      // Upload de imagem de capa se houver
+      if (capaFile && capsulaIdFinal) {
+        const capaPath = await capsulaService.uploadCapa(capsulaIdFinal, capaFile);
+        await capsulaService.updateCapsula(capsulaIdFinal, { capa_path: capaPath });
+        toast({ title: "Capa enviada com sucesso!" });
       }
 
       navigate(`/admin`);
@@ -192,6 +206,33 @@ export default function CapsulaBuilder() {
                 onChange={(e) => setCapsula({ ...capsula, titulo: e.target.value })}
                 placeholder="Ex: Correntes Interferênciais - Conceito"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="capa">Imagem de Capa (opcional)</Label>
+              <p className="text-sm text-muted-foreground">
+                Use GIF animado para efeito hover ou imagem estática
+              </p>
+              <FileUploadField
+                accept="image/*"
+                onFilesSelected={(files) => {
+                  if (files.length > 0) {
+                    setCapaFile(files[0]);
+                    const reader = new FileReader();
+                    reader.onload = (e) => setCapaPreview(e.target?.result as string);
+                    reader.readAsDataURL(files[0]);
+                  }
+                }}
+              />
+              {capaPreview && (
+                <div className="mt-2 rounded-md overflow-hidden border">
+                  <img 
+                    src={capaPreview} 
+                    alt="Preview da capa" 
+                    className="w-full h-48 object-cover"
+                  />
+                </div>
+              )}
             </div>
 
             <div>
