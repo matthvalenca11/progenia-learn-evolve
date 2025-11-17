@@ -164,6 +164,7 @@ export type Database = {
       capsulas: {
         Row: {
           ativo: boolean
+          capa_path: string | null
           categoria: string
           created_at: string
           id: string
@@ -180,6 +181,7 @@ export type Database = {
         }
         Insert: {
           ativo?: boolean
+          capa_path?: string | null
           categoria: string
           created_at?: string
           id?: string
@@ -196,6 +198,7 @@ export type Database = {
         }
         Update: {
           ativo?: boolean
+          capa_path?: string | null
           categoria?: string
           created_at?: string
           id?: string

@@ -20,6 +20,7 @@ export default function CapsulasGrid() {
   const [capsulas, setCapsulas] = useState<Capsula[]>([]);
   const [progressoMap, setProgressoMap] = useState<Map<string, CapsulaProgresso>>(new Map());
   const [stats, setStats] = useState({ total: 0, concluidas: 0, percentual: 0 });
+  const [capaUrls, setCapaUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user) {
@@ -49,9 +50,23 @@ export default function CapsulasGrid() {
         const progressoData = await capsulaService.getProgressoModulo(user.id, moduleId!);
         setProgressoMap(progressoData);
 
-        // Carregar estatísticas
+      // Carregar estatísticas
         const statsData = await capsulaService.calcularEstatisticasModulo(user.id, moduleId!);
         setStats(statsData);
+
+        // Carregar URLs das capas
+        const urls: Record<string, string> = {};
+        for (const capsula of capsulasData) {
+          if (capsula.capa_path) {
+            try {
+              const url = await capsulaService.getVisualUrl("imagem", capsula.capa_path);
+              urls[capsula.id!] = url;
+            } catch (error) {
+              console.error("Erro ao carregar capa:", error);
+            }
+          }
+        }
+        setCapaUrls(urls);
       }
     } catch (error: any) {
       toast({
@@ -149,16 +164,27 @@ export default function CapsulasGrid() {
                 )}
 
                 <CardContent className="p-0">
-                  {/* Thumbnail/Visual */}
-                  <div className="relative h-40 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center overflow-hidden">
-                    {capsula.tipo_visual === "lab" ? (
-                      <div className="text-center">
-                        <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm font-medium opacity-70">Lab Virtual</p>
-                      </div>
+                  {/* Thumbnail/Visual com Capa */}
+                  <div className="relative h-40 overflow-hidden">
+                    {capaUrls[capsula.id!] ? (
+                      <img
+                        src={capaUrls[capsula.id!]}
+                        alt={capsula.titulo}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
                     ) : (
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+                      <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                        {capsula.tipo_visual === "lab" ? (
+                          <div className="text-center">
+                            <Sparkles className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                            <p className="text-sm font-medium opacity-70">Lab Virtual</p>
+                          </div>
+                        ) : (
+                          <Sparkles className="w-12 h-12 opacity-30" />
+                        )}
+                      </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
                     <Badge className={`absolute top-3 left-3 ${getCategoriaColor(capsula.categoria)}`}>
                       {capsula.categoria}
                     </Badge>

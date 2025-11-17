@@ -27,6 +27,7 @@ export interface Capsula {
   takeaway: string;
   tipo_visual: "imagem" | "video" | "lab";
   visual_path?: string;
+  capa_path?: string;
   tipo_lab?: "mri_viewer" | "ultrasound_simulator" | "eletroterapia_lab" | "thermal_lab";
   ativo: boolean;
   ordem: number;
@@ -230,6 +231,22 @@ export const capsulaService = {
 
     const result = await storageService.uploadFile({
       bucket: bucket as any,
+      path,
+      file,
+    });
+
+    return result.path;
+  },
+
+  /**
+   * Upload de imagem de capa para cápsula
+   */
+  async uploadCapa(capsulaId: string, file: File): Promise<string> {
+    const safeName = storageService.generateUniqueFileName(file.name);
+    const path = `capsulas/${capsulaId}/capa_${safeName}`;
+
+    const result = await storageService.uploadFile({
+      bucket: "lesson-assets" as any,
       path,
       file,
     });
