@@ -22,6 +22,7 @@ import { UsersManager } from "@/components/admin/UsersManager";
 import { GamificationManager } from "@/components/admin/GamificationManager";
 import { ModulesManager } from "@/components/admin/ModulesManager";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
+import CapsulasList from "@/components/admin/CapsulasList";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -95,10 +96,14 @@ const Admin = () => {
       {/* Conteúdo Principal */}
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="modules">
               <BookOpen className="h-4 w-4 mr-2" />
               Módulos
+            </TabsTrigger>
+            <TabsTrigger value="capsulas">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Cápsulas
             </TabsTrigger>
             <TabsTrigger value="lessons">
               <GraduationCap className="h-4 w-4 mr-2" />
@@ -128,6 +133,10 @@ const Admin = () => {
 
           <TabsContent value="modules">
             <ModulesManager />
+          </TabsContent>
+
+          <TabsContent value="capsulas">
+            <CapsulasList />
           </TabsContent>
 
           <TabsContent value="lessons">

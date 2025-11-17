@@ -50,6 +50,176 @@ export type Database = {
         }
         Relationships: []
       }
+      capsula_progresso_usuario: {
+        Row: {
+          acertos_quiz: number
+          capsula_id: string
+          concluida: boolean
+          id: string
+          tentativas: number
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          acertos_quiz?: number
+          capsula_id: string
+          concluida?: boolean
+          id?: string
+          tentativas?: number
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          acertos_quiz?: number
+          capsula_id?: string
+          concluida?: boolean
+          id?: string
+          tentativas?: number
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capsula_progresso_usuario_capsula_id_fkey"
+            columns: ["capsula_id"]
+            isOneToOne: false
+            referencedRelation: "capsulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capsula_quiz_alternativas: {
+        Row: {
+          correta: boolean
+          created_at: string
+          id: string
+          micro_feedback: string | null
+          ordem_base: number
+          pergunta_id: string
+          texto: string
+        }
+        Insert: {
+          correta?: boolean
+          created_at?: string
+          id?: string
+          micro_feedback?: string | null
+          ordem_base?: number
+          pergunta_id: string
+          texto: string
+        }
+        Update: {
+          correta?: boolean
+          created_at?: string
+          id?: string
+          micro_feedback?: string | null
+          ordem_base?: number
+          pergunta_id?: string
+          texto?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capsula_quiz_alternativas_pergunta_id_fkey"
+            columns: ["pergunta_id"]
+            isOneToOne: false
+            referencedRelation: "capsula_quiz_perguntas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capsula_quiz_perguntas: {
+        Row: {
+          capsula_id: string
+          created_at: string
+          enunciado: string
+          id: string
+          ordem: number
+          tipo: string
+        }
+        Insert: {
+          capsula_id: string
+          created_at?: string
+          enunciado: string
+          id?: string
+          ordem?: number
+          tipo?: string
+        }
+        Update: {
+          capsula_id?: string
+          created_at?: string
+          enunciado?: string
+          id?: string
+          ordem?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capsula_quiz_perguntas_capsula_id_fkey"
+            columns: ["capsula_id"]
+            isOneToOne: false
+            referencedRelation: "capsulas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      capsulas: {
+        Row: {
+          ativo: boolean
+          categoria: string
+          created_at: string
+          id: string
+          modulo_id: string
+          ordem: number
+          pergunta_gatilho: string
+          takeaway: string
+          texto_curto: string
+          tipo_lab: string | null
+          tipo_visual: string
+          titulo: string
+          updated_at: string
+          visual_path: string | null
+        }
+        Insert: {
+          ativo?: boolean
+          categoria: string
+          created_at?: string
+          id?: string
+          modulo_id: string
+          ordem?: number
+          pergunta_gatilho: string
+          takeaway: string
+          texto_curto: string
+          tipo_lab?: string | null
+          tipo_visual: string
+          titulo: string
+          updated_at?: string
+          visual_path?: string | null
+        }
+        Update: {
+          ativo?: boolean
+          categoria?: string
+          created_at?: string
+          id?: string
+          modulo_id?: string
+          ordem?: number
+          pergunta_gatilho?: string
+          takeaway?: string
+          texto_curto?: string
+          tipo_lab?: string | null
+          tipo_visual?: string
+          titulo?: string
+          updated_at?: string
+          visual_path?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capsulas_modulo_id_fkey"
+            columns: ["modulo_id"]
+            isOneToOne: false
+            referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gamification_rules: {
         Row: {
           acao: string
