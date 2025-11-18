@@ -300,12 +300,6 @@ const Profile = () => {
 };
 
 // Separate component for Change Password form
-import { Lock } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-import { supabase } from "@/integrations/supabase/client";
-import { z } from "zod";
-
 const changePasswordSchema = z
   .object({
     currentPassword: z.string().min(1, "Senha atual é obrigatória"),
