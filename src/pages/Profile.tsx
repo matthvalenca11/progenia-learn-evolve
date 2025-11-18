@@ -4,10 +4,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { gamificationService } from "@/services/gamificationService";
 import { progressService } from "@/services/progressService";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { z } from "zod";
 import { 
   User, 
   Award, 
@@ -16,7 +22,8 @@ import {
   Clock,
   BookOpen,
   ArrowLeft,
-  Edit
+  Edit,
+  Lock
 } from "lucide-react";
 
 const Profile = () => {
@@ -274,9 +281,156 @@ const Profile = () => {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Change Password Section */}
+        <Card className="mt-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Alterar Senha
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ChangePasswordForm />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 };
+
+// Separate component for Change Password form
+import { Lock } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Separator } from "@/components/ui/separator";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
+    newPassword: z.string().min(8, "A nova senha deve ter pelo menos 8 caracteres").max(100),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  })
+  .refine((data) => data.newPassword !== data.currentPassword, {
+    message: "A nova senha deve ser diferente da senha atual",
+    path: ["newPassword"],
+  });
+
+function ChangePasswordForm() {
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const { user } = useAuth();
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const validated = changePasswordSchema.parse({
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+
+      setLoading(true);
+
+      // Get current user email
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser?.email) {
+        toast.error("Erro ao obter informações do usuário");
+        return;
+      }
+
+      // Verify current password by re-authenticating
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: currentUser.email,
+        password: validated.currentPassword,
+      });
+
+      if (signInError) {
+        toast.error("Senha atual incorreta");
+        return;
+      }
+
+      // Update to new password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: validated.newPassword,
+      });
+
+      if (updateError) {
+        toast.error("Erro ao alterar senha", {
+          description: updateError.message,
+        });
+      } else {
+        toast.success("Senha alterada com sucesso!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        toast.error("Ocorreu um erro ao alterar a senha");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
+      <div>
+        <Label htmlFor="currentPassword">Senha Atual</Label>
+        <Input
+          id="currentPassword"
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <Separator />
+
+      <div>
+        <Label htmlFor="newPassword">Nova Senha</Label>
+        <Input
+          id="newPassword"
+          type="password"
+          placeholder="Mínimo 8 caracteres"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          placeholder="Digite a senha novamente"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          disabled={loading}
+        />
+      </div>
+
+      <Button type="submit" disabled={loading}>
+        {loading ? "Alterando..." : "Alterar Senha"}
+      </Button>
+    </form>
+  );
+}
 
 export default Profile;

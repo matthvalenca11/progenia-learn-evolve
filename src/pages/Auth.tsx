@@ -174,6 +174,17 @@ const Auth = () => {
                 <Button type="submit" className="w-full gradient-accent text-white" disabled={loading}>
                   {loading ? "Entrando..." : "Entrar"}
                 </Button>
+
+                <div className="text-center mt-4">
+                  <Button
+                    type="button"
+                    variant="link"
+                    onClick={() => navigate("/forgot-password")}
+                    className="text-sm text-muted-foreground hover:text-primary"
+                  >
+                    Esqueceu sua senha?
+                  </Button>
+                </div>
               </form>
             </TabsContent>
 
