@@ -10,6 +10,44 @@ interface UltrasoundSimulatorProps {
   };
 }
 
+type DepthSample = {
+  zCm: number;
+  relIntensity: number; // 0–1 normalizado
+};
+
+function computeUltrasoundDepthProfile(
+  fMHz: number,
+  focusCm: number,
+  maxDepthCm: number = 6,
+  stepCm: number = 0.5
+): DepthSample[] {
+  const lambdaCm = 154000 / (fMHz * 1e6); // 1540 m/s = 154000 cm/s
+  const apertureCm = 3;
+  const nearFieldCm = (apertureCm * apertureCm) / (4 * lambdaCm);
+
+  const alpha_dB_per_cm = 0.5 * fMHz;
+
+  const samples: DepthSample[] = [];
+  const sigmaCm = nearFieldCm / 3;
+
+  for (let z = 0; z <= maxDepthCm + 1e-6; z += stepCm) {
+    const att_dB = alpha_dB_per_cm * z;
+    const attFactor = Math.pow(10, -att_dB / 10);
+
+    const focusShape = Math.exp(-Math.pow(z - focusCm, 2) / (2 * sigmaCm * sigmaCm));
+
+    const rawIntensity = attFactor * focusShape;
+    samples.push({ zCm: parseFloat(z.toFixed(2)), relIntensity: rawIntensity });
+  }
+
+  // normalizar
+  const maxVal = Math.max(...samples.map((s) => s.relIntensity), 1e-6);
+  return samples.map((s) => ({
+    ...s,
+    relIntensity: s.relIntensity / maxVal,
+  }));
+}
+
 export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
   // Sliders (keeping original names but mapping to physical model)
   const [gainPercent, setGainPercent] = useState(50); // 0-100 (Ganho/Brilho)
@@ -44,14 +82,15 @@ export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
     };
   }, [gainPercent, focusPercent, freqPercent]);
 
+  // Compute depth profile using realistic physics
+  const depthProfile = useMemo(
+    () => computeUltrasoundDepthProfile(results.frequencyMHz, results.targetDepthCm, 6, 0.5),
+    [results.frequencyMHz, results.targetDepthCm]
+  );
+
   // Visual factors
   const intensityFactor = gainPercent / 100;
   const waveDuration = 3 - results.frequencyMHz * 0.5; // faster for higher freq
-
-  // Depth attenuation
-  const depths = [1, 2, 3, 4, 5];
-  const mu = results.frequencyMHz <= 1.5 ? 0.35 : 1.0;
-  const depthIntensities = depths.map((z) => Math.exp(-mu * z));
 
   return (
     <div className="space-y-6">
@@ -81,8 +120,40 @@ export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
               <div className="h-[20%] bg-yellow-100/70 border-b border-yellow-200/70 flex items-center px-3 text-[10px] text-slate-900 font-medium">
                 Tecido subcutâneo
               </div>
-              <div className="h-[60%] bg-emerald-900/70 flex items-center px-3 text-[10px] text-emerald-100 font-medium">
+              <div className="h-[60%] bg-emerald-900/70 relative flex items-center px-3 text-[10px] text-emerald-100 font-medium">
                 Músculo
+                
+                {/* 2D Heatmap inside muscle */}
+                <div className="absolute inset-x-3 inset-y-3 grid grid-rows-5 grid-cols-8 gap-[2px]">
+                  {Array.from({ length: 5 }).map((_, rowIdx) => {
+                    const maxDepthCm = 6;
+                    const rowDepthStep = maxDepthCm / 5;
+                    const depthCenter = (rowIdx + 0.5) * rowDepthStep;
+                    
+                    const sample = depthProfile.reduce((prev, curr) =>
+                      Math.abs(curr.zCm - depthCenter) < Math.abs(prev.zCm - depthCenter)
+                        ? curr
+                        : prev
+                    ) || { relIntensity: 0 };
+
+                    return Array.from({ length: 8 }).map((_, colIdx) => {
+                      const i = sample.relIntensity;
+                      const r = Math.round(50 + 205 * i);
+                      const g = Math.round(80 + 150 * i);
+                      const b = Math.round(120 + 30 * (1 - i));
+
+                      return (
+                        <div
+                          key={`${rowIdx}-${colIdx}`}
+                          className="rounded-[2px] transition-all duration-300"
+                          style={{
+                            backgroundColor: `rgba(${r},${g},${b},${0.2 + 0.6 * i * intensityFactor})`,
+                          }}
+                        />
+                      );
+                    });
+                  })}
+                </div>
               </div>
             </div>
 
@@ -102,12 +173,12 @@ export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
 
             {/* Treatment region glow (moves with focus) */}
             <div
-              className="absolute inset-x-8 rounded-3xl bg-cyan-400/15 blur-2xl transition-all"
+              className="absolute inset-x-8 rounded-3xl bg-cyan-400/15 blur-3xl transition-all duration-500"
               style={{
-                top: `${10 + (results.targetDepthCm / 5) * 40}%`,
-                height: "25%",
-                opacity: 0.2 + intensityFactor * 0.6,
-                boxShadow: `0 0 ${12 + 25 * intensityFactor}px rgba(34, 211, 238, 0.7)`,
+                top: `${10 + (results.targetDepthCm / 6) * 50}%`,
+                height: "20%",
+                opacity: 0.3 + intensityFactor * 0.7,
+                boxShadow: `0 0 ${15 + 35 * intensityFactor}px rgba(34, 211, 238, 0.8)`,
               }}
             />
           </div>
@@ -182,37 +253,43 @@ export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
         </Card>
       </div>
 
-      {/* Depth bars */}
+      {/* Depth bars - realistic physics-based profile */}
       <Card className="p-6">
-        <h4 className="font-semibold mb-3">Intensidade relativa por profundidade</h4>
-        <div className="flex items-end justify-center gap-4 h-32">
-          {depths.map((z, idx) => {
-            const rel = depthIntensities[idx];
-            const height = 20 + rel * 80;
-            const opacity = 0.3 + rel * 0.7;
-            const isFocused = Math.abs(z - results.targetDepthCm) < 0.8;
+        <h4 className="font-semibold mb-3">Perfil de intensidade por profundidade (modelo físico)</h4>
+        <div className="flex items-end justify-center gap-2 h-32">
+          {depthProfile.filter((_, idx) => idx % 2 === 0).map((sample) => {
+            const i = sample.relIntensity;
+            const height = 20 + i * 80;
+            const isFocused = Math.abs(sample.zCm - results.targetDepthCm) < 0.6;
+            
+            const r = Math.round(50 + 205 * i);
+            const g = Math.round(80 + 150 * i);
+            const b = Math.round(120 + 30 * (1 - i));
 
             return (
-              <div key={z} className="flex flex-col items-center justify-end gap-1">
+              <div key={sample.zCm} className="flex flex-col items-center justify-end gap-1">
                 <div
-                  className={`w-8 rounded-t-md transition-all ${
-                    isFocused ? "bg-cyan-400" : "bg-cyan-500"
-                  }`}
+                  className="w-4 rounded-t-md transition-all duration-300"
                   style={{
                     height: `${height}px`,
-                    opacity,
+                    background: `linear-gradient(to top, rgb(${r},${g},${b}), rgba(${r},${g},${b},0.7))`,
+                    opacity: 0.3 + 0.7 * i,
                     border: isFocused ? "2px solid rgba(34, 211, 238, 1)" : "none",
+                    boxShadow: i > 0.85 ? `0 0 10px rgba(${r},${g},${b},0.8)` : "none",
                   }}
                 />
-                <span className="text-[11px] text-muted-foreground font-medium">{z} cm</span>
+                <span className="text-[10px] text-muted-foreground font-medium">
+                  {sample.zCm.toFixed(1)}
+                </span>
               </div>
             );
           })}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          A intensidade do feixe diminui exponencialmente com a profundidade. Frequências mais altas 
-          (próximas a 3 MHz) atenuam mais rapidamente, sendo mais superficiais. Frequências mais baixas 
-          (próximas a 1 MHz) penetram mais profundamente. A barra destacada indica a profundidade de foco atual.
+          Modelo físico com near field, atenuação em tecido (0.5 dB/cm/MHz) e foco gaussiano. 
+          O pico de intensidade ocorre na profundidade de foco ajustada. Frequências mais altas 
+          (3 MHz) têm atenuação mais rápida e campo próximo menor. Frequências mais baixas (1 MHz) 
+          penetram mais profundamente com foco mais largo.
         </p>
       </Card>
 
