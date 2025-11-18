@@ -167,3 +167,17 @@ All colors MUST be HSL.
     transform: translateX(100%);
   }
 }
+
+@keyframes ultrasoundWave {
+  0% {
+    transform: translate(-50%, -10%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, 110%);
+    opacity: 0;
+  }
+}

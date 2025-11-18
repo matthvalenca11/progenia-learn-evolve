@@ -1,263 +1,296 @@
-import { useState, useMemo } from "react";
-import { LabLayout } from "./LabLayout";
+import { useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Card } from "@/components/ui/card";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-type FrequencyType = "1" | "3";
-type ModeType = "continuous" | "pulsed";
+type FrequencyMHz = 1 | 3;
+type Mode = "continuous" | "pulsed";
 
 export function TherapeuticUltrasoundLab() {
-  const [frequency, setFrequency] = useState<FrequencyType>("1");
-  const [intensity, setIntensity] = useState(1.5); // W/cm²
-  const [era, setEra] = useState(5); // cm²
-  const [mode, setMode] = useState<ModeType>("continuous");
-  const [dutyCycle, setDutyCycle] = useState(50); // %
-  const [duration, setDuration] = useState(10); // minutes
+  const [frequencyMHz, setFrequencyMHz] = useState<FrequencyMHz>(1);
+  const [intensity, setIntensity] = useState(1.0); // W/cm²
+  const [era, setEra] = useState(5);               // cm²
+  const [mode, setMode] = useState<Mode>("continuous");
+  const [dutyCycle, setDutyCycle] = useState(50);  // %
+  const [durationMin, setDurationMin] = useState(8); // min
 
-  const calculations = useMemo(() => {
-    // Power
-    const power = intensity * era;
+  const results = useMemo(() => {
+    const duty = mode === "continuous" ? 1 : dutyCycle / 100;
+    const timeSec = durationMin * 60;
 
-    // Duty factor
-    const duty = mode === "continuous" ? 1.0 : dutyCycle / 100;
+    const powerW = intensity * era;
+    const energyJ = powerW * timeSec * duty;
+    const doseJcm2 = intensity * timeSec * duty;
 
-    // Energy delivered
-    const timeSeconds = duration * 60;
-    const energy = power * timeSeconds * duty;
-
-    // Dose (energy per unit area)
-    const dose = intensity * timeSeconds * duty;
-
-    // Classification
-    let classification = "";
-    if (dose < 5) classification = "Dose baixa - efeitos não-térmicos";
-    else if (dose < 20) classification = "Dose moderada - efeitos térmicos leves";
-    else classification = "Dose alta - efeitos térmicos intensos";
+    let doseLabel = "Dose baixa (< 5 J/cm²)";
+    if (doseJcm2 >= 5 && doseJcm2 <= 20) doseLabel = "Dose moderada (5–20 J/cm²)";
+    if (doseJcm2 > 20) doseLabel = "Dose alta (> 20 J/cm²)";
 
     return {
-      power: power.toFixed(2),
-      energy: energy.toFixed(1),
-      dose: dose.toFixed(1),
-      classification,
+      powerW,
+      energyJ,
+      doseJcm2,
+      doseLabel,
     };
-  }, [intensity, era, mode, dutyCycle, duration]);
+  }, [intensity, era, mode, dutyCycle, durationMin]);
 
-  const renderTissuePenetration = () => {
-    const mu = frequency === "1" ? 0.35 : 1.0; // Attenuation coefficient
-    const depths = [1, 2, 3, 4, 5]; // cm
-    
-    return (
-      <div className="space-y-4">
-        {/* Tissue Layers */}
-        <div className="relative h-48 rounded-lg overflow-hidden border border-border">
-          {/* Probe */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-muted-foreground/20 rounded-b-lg border-x border-b border-border">
-            <div className="text-[10px] text-center mt-1 font-medium">Transdutor</div>
-          </div>
+  // Fatores para mapeamento visual
+  const intensityFactor = Math.min(Math.max(intensity / 2.5, 0), 1); // 0–1
+  const dutyFactor = mode === "continuous" ? 1 : dutyCycle / 100;
+  const totalFactor = Math.min(results.doseJcm2 / 25, 1); // normaliza para visual (0–~1)
 
-          {/* Tissue layers */}
-          <div className="absolute top-8 inset-x-0 h-12 bg-amber-100/30 border-y border-amber-200/50">
-            <span className="text-[10px] ml-2 mt-1 inline-block text-amber-900/60">Pele</span>
-          </div>
-          <div className="absolute top-20 inset-x-0 h-16 bg-yellow-100/30 border-b border-yellow-200/50">
-            <span className="text-[10px] ml-2 mt-1 inline-block text-yellow-900/60">Subcutâneo</span>
-          </div>
-          <div className="absolute top-36 inset-x-0 bottom-0 bg-red-100/20">
-            <span className="text-[10px] ml-2 mt-1 inline-block text-red-900/60">Músculo</span>
-          </div>
+  // Duração da animação das ondas (3 MHz = mais rápido)
+  const waveDuration = frequencyMHz === 1 ? 2.8 : 1.6;
 
-          {/* Wavefronts */}
-          {[0, 1, 2, 3, 4].map((i) => {
-            const depth = 6 + i * 36;
-            const opacity = Math.exp(-mu * i * 1.2);
-            return (
-              <div
-                key={i}
-                className="absolute left-1/2 -translate-x-1/2 h-[2px] bg-primary animate-pulse"
-                style={{
-                  top: `${depth}px`,
-                  width: `${60 + i * 10}%`,
-                  opacity: opacity,
-                  animationDelay: `${i * 0.2}s`,
-                  animationDuration: "1.5s",
-                }}
-              />
-            );
-          })}
-        </div>
+  const depths = [1, 2, 3, 4, 5];
+  const mu = frequencyMHz === 1 ? 0.35 : 1.0; // coeficiente de atenuação simplificado
 
-        {/* Intensity at depth */}
-        <div>
-          <h4 className="text-sm font-semibold mb-2">Intensidade Relativa por Profundidade</h4>
-          <div className="space-y-2">
-            {depths.map((depth) => {
-              const relativeIntensity = Math.exp(-mu * depth);
-              const percentage = relativeIntensity * 100;
-              
-              return (
-                <div key={depth} className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground w-12">{depth} cm:</span>
-                  <div className="flex-1 h-4 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary transition-all duration-300"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <span className="text-xs font-mono w-12">{percentage.toFixed(0)}%</span>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-xs text-muted-foreground mt-3">
-            {frequency === "1"
-              ? "1 MHz: Penetração profunda (μ = 0.35 cm⁻¹)"
-              : "3 MHz: Penetração superficial (μ = 1.0 cm⁻¹)"}
-          </p>
-        </div>
-      </div>
-    );
-  };
-
-  const controls = (
-    <>
-      <div className="space-y-3">
-        <Label>Frequência</Label>
-        <RadioGroup value={frequency} onValueChange={(v) => setFrequency(v as FrequencyType)}>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="1" id="freq-1" />
-            <Label htmlFor="freq-1" className="cursor-pointer font-normal">1 MHz (penetração profunda)</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="3" id="freq-3" />
-            <Label htmlFor="freq-3" className="cursor-pointer font-normal">3 MHz (penetração superficial)</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Intensidade (W/cm²)</Label>
-          <span className="text-sm font-medium">{intensity.toFixed(1)} W/cm²</span>
-        </div>
-        <Slider
-          value={[intensity]}
-          onValueChange={([v]) => setIntensity(v)}
-          min={0.1}
-          max={2.5}
-          step={0.1}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>ERA (cm²)</Label>
-          <span className="text-sm font-medium">{era} cm²</span>
-        </div>
-        <Slider
-          value={[era]}
-          onValueChange={([v]) => setEra(v)}
-          min={3}
-          max={10}
-          step={0.5}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <Label>Modo</Label>
-        <RadioGroup value={mode} onValueChange={(v) => setMode(v as ModeType)}>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="continuous" id="mode-cont" />
-            <Label htmlFor="mode-cont" className="cursor-pointer font-normal">Contínuo</Label>
-          </div>
-          <div className="flex items-center space-x-2">
-            <RadioGroupItem value="pulsed" id="mode-pulsed" />
-            <Label htmlFor="mode-pulsed" className="cursor-pointer font-normal">Pulsado</Label>
-          </div>
-        </RadioGroup>
-      </div>
-
-      {mode === "pulsed" && (
-        <div className="space-y-3">
-          <div className="flex justify-between">
-            <Label>Ciclo de Trabalho (%)</Label>
-            <span className="text-sm font-medium">{dutyCycle}%</span>
-          </div>
-          <Slider
-            value={[dutyCycle]}
-            onValueChange={([v]) => setDutyCycle(v)}
-            min={10}
-            max={100}
-            step={5}
-          />
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Duração (min)</Label>
-          <span className="text-sm font-medium">{duration} min</span>
-        </div>
-        <Slider
-          value={[duration]}
-          onValueChange={([v]) => setDuration(v)}
-          min={1}
-          max={20}
-          step={1}
-        />
-      </div>
-    </>
-  );
-
-  const visualization = (
-    <div className="space-y-6">
-      {/* Tissue Penetration Visualization */}
-      <div>
-        <h3 className="text-sm font-semibold mb-3">Penetração Tecidual</h3>
-        {renderTissuePenetration()}
-      </div>
-
-      {/* Results */}
-      <Card className="bg-muted/30 p-4 space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Potência:</span>
-          <span className="font-mono font-bold">{calculations.power} W</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Energia Total:</span>
-          <span className="font-mono font-bold">{calculations.energy} J</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Dose:</span>
-          <span className="font-mono font-bold text-primary">{calculations.dose} J/cm²</span>
-        </div>
-        <div className="pt-2 border-t border-border">
-          <p className="text-sm font-medium">{calculations.classification}</p>
-        </div>
-      </Card>
-
-      {/* Explanation */}
-      <div className="text-xs text-muted-foreground space-y-2">
-        <p>
-          <strong>Potência:</strong> P = intensidade × ERA
-        </p>
-        <p>
-          <strong>Energia:</strong> E = P × tempo × fator de trabalho
-        </p>
-        <p>
-          <strong>Atenuação:</strong> I(z) = I₀ × e^(-μz) onde μ depende da frequência
-        </p>
-      </div>
-    </div>
-  );
+  const depthIntensities = depths.map((z) => {
+    const rel = Math.exp(-mu * z); // I(z)/I0
+    return rel;
+  });
 
   return (
-    <LabLayout
-      title="Ultrassom Terapêutico"
-      description="Explore penetração tecidual, densidade de energia e efeitos térmicos vs não-térmicos"
-      controls={controls}
-      visualization={visualization}
-    />
+    <Card className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-1">
+          Laboratório Virtual – Ultrassom Terapêutico
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Ajuste os parâmetros da aplicação de ultrassom e observe o impacto na potência, dose
+          (energia por área) e na profundidade de penetração do feixe.
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* CONTROLES E RESULTADOS */}
+        <div className="space-y-6">
+          {/* Frequência */}
+          <div className="space-y-2">
+            <Label>Frequência</Label>
+            <Select
+              value={String(frequencyMHz)}
+              onValueChange={(v) => setFrequencyMHz(Number(v) as FrequencyMHz)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 MHz (mais profundo)</SelectItem>
+                <SelectItem value="3">3 MHz (mais superficial)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              1 MHz tende a alcançar estruturas mais profundas; 3 MHz atua mais superficialmente.
+            </p>
+          </div>
+
+          {/* Intensidade */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Intensidade (W/cm²)</Label>
+              <span className="text-sm font-medium">
+                {intensity.toFixed(2)} W/cm²
+              </span>
+            </div>
+            <Slider
+              min={0.1}
+              max={2.5}
+              step={0.1}
+              value={[intensity]}
+              onValueChange={([v]) => setIntensity(v)}
+            />
+          </div>
+
+          {/* ERA */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>ERA – Área efetiva (cm²)</Label>
+              <Input
+                type="number"
+                min={3}
+                max={10}
+                value={era}
+                onChange={(e) => setEra(Number(e.target.value) || 0)}
+                className="w-24 h-8 text-sm"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              A potência total depende da intensidade e da área efetiva do cabeçote.
+            </p>
+          </div>
+
+          {/* Modo + Duty */}
+          <div className="space-y-2">
+            <Label>Modo</Label>
+            <Select
+              value={mode}
+              onValueChange={(v) => setMode(v as Mode)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="continuous">Contínuo (100%)</SelectItem>
+                <SelectItem value="pulsed">Pulsado</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {mode === "pulsed" && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Duty cycle (%)</Label>
+                <span className="text-sm font-medium">{dutyCycle}%</span>
+              </div>
+              <Slider
+                min={10}
+                max={100}
+                step={5}
+                value={[dutyCycle]}
+                onValueChange={([v]) => setDutyCycle(v)}
+              />
+              <p className="text-xs text-muted-foreground">
+                Duty cycle reduz a fração de tempo em que o feixe está efetivamente ligado.
+              </p>
+            </div>
+          )}
+
+          {/* Duração */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Duração da sessão (min)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={20}
+                value={durationMin}
+                onChange={(e) => setDurationMin(Number(e.target.value) || 0)}
+                className="w-24 h-8 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Resultados numéricos */}
+          <Card className="p-4 space-y-1 bg-muted/70">
+            <p className="text-sm">
+              <span className="font-semibold">Potência:</span>{" "}
+              {results.powerW.toFixed(2)} W
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Energia total:</span>{" "}
+              {results.energyJ.toFixed(1)} J
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Dose (energia por área):</span>{" "}
+              {results.doseJcm2.toFixed(1)} J/cm²
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Interpretação:</span>{" "}
+              {results.doseLabel}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Valores servem como apoio didático para discutir dose relativa e não
+              substituem protocolos clínicos.
+            </p>
+          </Card>
+        </div>
+
+        {/* VISUAL / ANIMAÇÕES */}
+        <div className="space-y-4">
+          {/* Probe + tecidos + ondas */}
+          <Card className="p-4 bg-slate-900 text-slate-50 relative overflow-hidden">
+            <p className="text-sm mb-2 font-medium">
+              Propagação do feixe e profundidade de penetração
+            </p>
+
+            <div className="relative mx-auto mt-2 h-56 w-full max-w-md rounded-3xl bg-slate-800 border border-slate-600 overflow-hidden">
+              {/* Probe */}
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-28 h-10 rounded-2xl bg-slate-100 shadow-lg flex items-center justify-center text-[11px] text-slate-700 font-medium">
+                Probe
+              </div>
+
+              {/* Camadas de tecido */}
+              <div className="absolute inset-x-0 top-8 bottom-0">
+                <div className="h-1/5 bg-amber-200/70 border-b border-amber-300/60 flex items-center px-3 text-[10px] text-slate-900 font-medium">
+                  Pele
+                </div>
+                <div className="h-1/5 bg-yellow-100/70 border-b border-yellow-200/70 flex items-center px-3 text-[10px] text-slate-900 font-medium">
+                  Tecido subcutâneo
+                </div>
+                <div className="h-3/5 bg-emerald-900/70 flex items-center px-3 text-[10px] text-emerald-100 font-medium">
+                  Músculo
+                </div>
+              </div>
+
+              {/* Ondas descendo – 3 "frentes de onda" */}
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="absolute left-1/2 -translate-x-1/2 w-[75%] h-[140%] border-[2px] rounded-b-full pointer-events-none"
+                  style={{
+                    borderColor: `rgba(56, 189, 248, ${
+                      0.1 + 0.6 * intensityFactor * dutyFactor
+                    })`,
+                    boxShadow: `0 0 ${10 + 25 * intensityFactor}px rgba(56, 189, 248, 0.7)`,
+                    animation: `ultrasoundWave ${waveDuration}s linear infinite`,
+                    animationDelay: `${(waveDuration / 3) * i}s`,
+                  }}
+                />
+              ))}
+
+              {/* "Zona efetiva" de tratamento – brilho proporcional à dose */}
+              <div
+                className="absolute inset-x-8 top-16 bottom-8 rounded-3xl bg-cyan-400/10 blur-2xl transition-all"
+                style={{
+                  opacity: 0.15 + totalFactor * 0.7,
+                  boxShadow: `0 0 ${15 + 30 * totalFactor}px rgba(34,211,238,0.8)`,
+                }}
+              />
+            </div>
+
+            <p className="mt-3 text-[11px] text-slate-300">
+              A velocidade e o "alcance" visual das ondas variam com a frequência (1 MHz → mais
+              profundo; 3 MHz → mais superficial). O brilho da região tratada aumenta com a
+              combinação de intensidade, duty cycle e tempo de aplicação.
+            </p>
+          </Card>
+
+          {/* Barras por profundidade */}
+          <Card className="p-4">
+            <p className="text-sm mb-2 font-medium">
+              Intensidade relativa em diferentes profundidades
+            </p>
+            <div className="flex items-end gap-3 h-32">
+              {depths.map((z, idx) => {
+                const rel = depthIntensities[idx];
+                const height = 20 + rel * 80; // px
+                const opacity = 0.25 + rel * 0.7;
+
+                return (
+                  <div key={z} className="flex-1 flex flex-col items-center justify-end gap-1">
+                    <div
+                      className="w-full rounded-t-md bg-cyan-500 transition-all"
+                      style={{
+                        height: `${height}px`,
+                        opacity,
+                      }}
+                    />
+                    <span className="text-[11px] text-muted-foreground font-medium">{z} cm</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              O modelo de atenuação exponencial mostra como a intensidade relativa do feixe cai com
+              a profundidade. Em 3 MHz a queda é mais rápida (camada mais superficial), enquanto em
+              1 MHz a energia alcança regiões mais profundas.
+            </p>
+          </Card>
+        </div>
+      </div>
+    </Card>
   );
 }
