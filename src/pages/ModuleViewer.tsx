@@ -280,8 +280,69 @@ export default function ModuleViewer() {
             </CardContent>
           </Card>
 
+          {/* Virtual Labs Section */}
+          <div className="mt-8 space-y-4">
+            <h2 className="text-xl font-semibold">Laboratórios Virtuais</h2>
+            <p className="text-muted-foreground">
+              Explore laboratórios interativos com simulações realistas de parâmetros clínicos
+            </p>
+            
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/lesson/${lessons[0]?.id}`)}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <FlaskConical className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">Dosagem em Eletroterapia</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Simule parâmetros de corrente, frequência e formas de onda. Calcule dosagem total com física realista.
+                      </p>
+                      <Badge variant="outline" className="mt-2">Simulador Interativo</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/lesson/${lessons[0]?.id}`)}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <FlaskConical className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">Ultrassom Terapêutico</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Explore penetração tecidual, densidade de energia e efeitos térmicos vs não-térmicos.
+                      </p>
+                      <Badge variant="outline" className="mt-2">Modelo de Penetração</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="hover:shadow-lg transition-all cursor-pointer" onClick={() => navigate(`/lesson/${lessons[0]?.id}`)}>
+                <CardContent className="p-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <FlaskConical className="h-6 w-6 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold mb-1">Perfil de Feixe Ultrassônico</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Visualize hot spots, BNR e distribuição de intensidade no campo acústico.
+                      </p>
+                      <Badge variant="outline" className="mt-2">Visualização 2D</Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
           {/* Lessons List */}
-          <div className="space-y-4">
+          <div className="space-y-4 mt-8">
             <h2 className="text-xl font-semibold mb-4">Aulas do Módulo</h2>
             
             {lessons.map((lesson, index) => {
