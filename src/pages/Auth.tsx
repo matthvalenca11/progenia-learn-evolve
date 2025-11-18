@@ -13,7 +13,7 @@ import { z } from "zod";
 const signUpSchema = z.object({
   fullName: z.string().trim().min(2, "O nome deve ter pelo menos 2 caracteres").max(100),
   email: z.string().trim().email("Endereço de e-mail inválido").max(255),
-  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres").max(100),
+  password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres").max(100),
   institution: z.string().trim().max(200).optional(),
 });
 
