@@ -12,7 +12,7 @@ import { z } from "zod";
 
 const passwordSchema = z
   .object({
-    password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres").max(100),
+    password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres").max(100),
     confirmPassword: z.string(),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -106,7 +106,7 @@ const ResetPassword = () => {
             <Input
               id="password"
               type="password"
-              placeholder="Mínimo 8 caracteres"
+              placeholder="Mínimo 6 caracteres"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
