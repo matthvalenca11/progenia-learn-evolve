@@ -158,3 +158,12 @@ All colors MUST be HSL.
     transition: var(--transition-bounce);
   }
 }
+
+@keyframes nervePulse {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
