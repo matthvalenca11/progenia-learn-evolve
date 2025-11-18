@@ -1,234 +1,265 @@
-import { useState, useMemo } from "react";
-import { LabLayout } from "./LabLayout";
+import { useMemo, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
-type WaveformType = "monophasic" | "biphasic_symmetric" | "biphasic_asymmetric" | "russian";
+const minFreq = 1;
+const maxFreq = 150;
+const minPulse = 50;
+const maxPulse = 1000;
+const minCurrent = 1;
+const maxCurrent = 120;
 
 export function ElectrotherapyDoseLab() {
-  const [current, setCurrent] = useState(30); // mA
-  const [pulseWidth, setPulseWidth] = useState(200); // µs
-  const [frequency, setFrequency] = useState(50); // Hz
-  const [duration, setDuration] = useState(15); // minutes
-  const [waveform, setWaveform] = useState<WaveformType>("biphasic_symmetric");
+  const [frequency, setFrequency] = useState(50);    // Hz
+  const [pulseWidth, setPulseWidth] = useState(300); // µs
+  const [current, setCurrent] = useState(20);        // mA
+  const [duration, setDuration] = useState(10);      // min
 
-  const calculations = useMemo(() => {
-    // Convert units
-    const currentAmps = current / 1000; // mA to A
-    let pulseWidthSeconds = pulseWidth / 1_000_000; // µs to s
+  const results = useMemo(() => {
+    const I_amp = current / 1000; // mA → A
+    const pw_sec = pulseWidth / 1_000_000; // µs → s
 
-    // Russian stimulation uses effective pulse width
-    if (waveform === "russian") {
-      pulseWidthSeconds = 1 / 2500; // 2500 Hz carrier frequency
-    }
+    const chargePerPulse_C = I_amp * pw_sec;
+    const chargePerPulse_mC = chargePerPulse_C * 1000;
 
-    // Charge per pulse (mC)
-    const chargePerPulse = (currentAmps * pulseWidthSeconds) * 1000;
+    const pulsesPerSession = frequency * duration * 60;
+    const totalCharge_mC = chargePerPulse_mC * pulsesPerSession;
 
-    // Total pulses in session
-    const durationSeconds = duration * 60;
-    const totalPulses = frequency * durationSeconds;
-
-    // Total charge (mC)
-    const totalCharge = chargePerPulse * totalPulses;
-
-    // Classification
-    let classification = "";
-    if (totalCharge < 100) classification = "Dose baixa - efeitos sensoriais";
-    else if (totalCharge < 300) classification = "Dose moderada - contração muscular leve";
-    else if (totalCharge < 600) classification = "Dose alta - contração muscular forte";
-    else classification = "Dose muito alta - uso cauteloso";
+    let doseLabel = "Baixa carga total";
+    if (totalCharge_mC > 100) doseLabel = "Carga moderada";
+    if (totalCharge_mC > 400) doseLabel = "Alta carga total";
 
     return {
-      chargePerPulse: chargePerPulse.toFixed(3),
-      totalPulses: totalPulses.toFixed(0),
-      totalCharge: totalCharge.toFixed(1),
-      classification,
+      chargePerPulse_mC,
+      pulsesPerSession,
+      totalCharge_mC,
+      doseLabel,
     };
-  }, [current, pulseWidth, frequency, duration, waveform]);
+  }, [current, pulseWidth, frequency, duration]);
 
-  const renderPulseTrain = () => {
-    const pulseCount = Math.min(50, Math.ceil(frequency / 2)); // Visual representation
-    const pulses = Array.from({ length: pulseCount });
-    
-    const heightScale = current / 120; // Normalize to max current
-    const spacing = 100 / pulseCount;
+  // Mapeia os parâmetros para atributos visuais
+  const intensityFactor = current / maxCurrent; // 0–1
+  const pulseWidthFactor = (pulseWidth - minPulse) / (maxPulse - minPulse); // 0–1
+  const frequencyFactor = (frequency - minFreq) / (maxFreq - minFreq); // 0–1
 
-    return (
-      <div className="relative h-48 bg-background border border-border rounded-lg overflow-hidden">
-        <div className="absolute inset-0 flex items-end justify-around px-2">
-          {pulses.map((_, i) => {
-            const height = 30 + heightScale * 140; // 30-170px range
-            
-            if (waveform === "russian") {
-              // Show carrier frequency effect with multiple thin lines
-              return (
-                <div key={i} className="flex gap-[1px]" style={{ width: `${spacing * 0.8}%` }}>
-                  {[0, 1, 2].map((j) => (
-                    <div
-                      key={j}
-                      className="bg-primary/70"
-                      style={{
-                        height: `${height * (0.8 + Math.random() * 0.4)}px`,
-                        width: '2px',
-                      }}
-                    />
-                  ))}
-                </div>
-              );
-            }
+  // Duração da animação das "bolinhas" no nervo (freq alta = animação mais rápida)
+  const nerveAnimationDuration = 3 - 2.2 * frequencyFactor; // ~0.8–3s
 
-            // Regular pulse
-            return (
-              <div
-                key={i}
-                className="bg-primary"
-                style={{
-                  height: `${height}px`,
-                  width: `${spacing * 0.4}%`,
-                  minWidth: '2px',
-                }}
-              />
-            );
-          })}
-        </div>
-        
-        {/* Baseline */}
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-border" />
-      </div>
-    );
-  };
-
-  const controls = (
-    <>
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Corrente (mA)</Label>
-          <span className="text-sm font-medium">{current} mA</span>
-        </div>
-        <Slider
-          value={[current]}
-          onValueChange={([v]) => setCurrent(v)}
-          min={1}
-          max={120}
-          step={1}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Largura de Pulso (µs)</Label>
-          <span className="text-sm font-medium">{pulseWidth} µs</span>
-        </div>
-        <Slider
-          value={[pulseWidth]}
-          onValueChange={([v]) => setPulseWidth(v)}
-          min={50}
-          max={1000}
-          step={10}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Frequência (Hz)</Label>
-          <span className="text-sm font-medium">{frequency} Hz</span>
-        </div>
-        <Slider
-          value={[frequency]}
-          onValueChange={([v]) => setFrequency(v)}
-          min={1}
-          max={150}
-          step={1}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <div className="flex justify-between">
-          <Label>Duração (min)</Label>
-          <span className="text-sm font-medium">{duration} min</span>
-        </div>
-        <Slider
-          value={[duration]}
-          onValueChange={([v]) => setDuration(v)}
-          min={1}
-          max={60}
-          step={1}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <Label>Tipo de Forma de Onda</Label>
-        <Select value={waveform} onValueChange={(v) => setWaveform(v as WaveformType)}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="monophasic">Monofásica</SelectItem>
-            <SelectItem value="biphasic_symmetric">Bifásica Simétrica</SelectItem>
-            <SelectItem value="biphasic_asymmetric">Bifásica Assimétrica</SelectItem>
-            <SelectItem value="russian">Corrente Russa (2500 Hz)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-    </>
-  );
-
-  const visualization = (
-    <div className="space-y-6">
-      {/* Pulse Train Visualization */}
-      <div>
-        <h3 className="text-sm font-semibold mb-3">Trem de Pulsos</h3>
-        {renderPulseTrain()}
-        <p className="text-xs text-muted-foreground mt-2">
-          {waveform === "russian"
-            ? "Corrente Russa: Múltiplas linhas representam a frequência portadora de 2500 Hz modulada em 50 Hz"
-            : "Altura = intensidade da corrente; Densidade = frequência"}
-        </p>
-      </div>
-
-      {/* Results */}
-      <Card className="bg-muted/30 p-4 space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Carga por Pulso:</span>
-          <span className="font-mono font-bold">{calculations.chargePerPulse} mC</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Pulsos Totais:</span>
-          <span className="font-mono font-bold">{calculations.totalPulses}</span>
-        </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Carga Total:</span>
-          <span className="font-mono font-bold text-primary">{calculations.totalCharge} mC</span>
-        </div>
-        <div className="pt-2 border-t border-border">
-          <p className="text-sm font-medium">{calculations.classification}</p>
-        </div>
-      </Card>
-
-      {/* Explanation */}
-      <div className="text-xs text-muted-foreground space-y-2">
-        <p>
-          <strong>Frequência:</strong> Maior frequência = mais pulsos por segundo = densidade visual aumenta
-        </p>
-        <p>
-          <strong>Carga por Pulso:</strong> Q = I(A) × largura(s) × 1000
-        </p>
-        <p>
-          <strong>Corrente Russa:</strong> Usa largura de pulso efetiva de 1/2500s devido à frequência portadora
-        </p>
-      </div>
-    </div>
-  );
+  // Quantidade de barras na "timeline" (não vamos desenhar 500, apenas uma amostra)
+  const pulseBars = Array.from({ length: 20 });
 
   return (
-    <LabLayout
-      title="Dosagem em Eletroterapia"
-      description="Simule parâmetros de estimulação elétrica e calcule a dosagem total com física realista"
-      controls={controls}
-      visualization={visualization}
-    />
+    <Card className="p-6 space-y-6">
+      <div>
+        <h2 className="text-2xl font-semibold mb-1">Laboratório Virtual – Eletroterapia</h2>
+        <p className="text-sm text-muted-foreground">
+          Ajuste os parâmetros e observe como eles afetam a carga elétrica e o padrão de
+          estimulação sobre o nervo e o músculo.
+        </p>
+      </div>
+
+      <div className="grid lg:grid-cols-2 gap-8">
+        {/* CONTROLES */}
+        <div className="space-y-6">
+          {/* Frequência */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Frequência (Hz)</Label>
+              <span className="text-sm font-medium">{frequency} Hz</span>
+            </div>
+            <Slider
+              min={minFreq}
+              max={maxFreq}
+              step={1}
+              value={[frequency]}
+              onValueChange={([v]) => setFrequency(v)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Frequências mais altas geram mais pulsos por segundo e podem produzir sensações mais contínuas.
+            </p>
+          </div>
+
+          {/* Largura de pulso */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Largura de pulso (µs)</Label>
+              <span className="text-sm font-medium">{pulseWidth} µs</span>
+            </div>
+            <Slider
+              min={minPulse}
+              max={maxPulse}
+              step={10}
+              value={[pulseWidth]}
+              onValueChange={([v]) => setPulseWidth(v)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Pulsos mais longos recrutam fibras mais profundas, mas podem ser menos confortáveis.
+            </p>
+          </div>
+
+          {/* Intensidade */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Intensidade (mA)</Label>
+              <span className="text-sm font-medium">{current} mA</span>
+            </div>
+            <Slider
+              min={minCurrent}
+              max={maxCurrent}
+              step={1}
+              value={[current]}
+              onValueChange={([v]) => setCurrent(v)}
+            />
+            <p className="text-xs text-muted-foreground">
+              Intensidade maior aumenta a carga por pulso e a chance de contração visível.
+            </p>
+          </div>
+
+          {/* Duração */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label>Duração da sessão (min)</Label>
+              <Input
+                className="w-24 h-8 text-sm"
+                type="number"
+                min={1}
+                max={60}
+                value={duration}
+                onChange={(e) => setDuration(Number(e.target.value) || 0)}
+              />
+            </div>
+          </div>
+
+          {/* RESULTADOS NUMÉRICOS */}
+          <Card className="p-4 space-y-1 bg-muted/70">
+            <p className="text-sm">
+              <span className="font-semibold">Carga por pulso:</span>{" "}
+              {results.chargePerPulse_mC.toFixed(4)} mC
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Pulsos por sessão (aprox.):</span>{" "}
+              {Math.round(results.pulsesPerSession).toLocaleString("pt-BR")}
+            </p>
+            <p className="text-sm">
+              <span className="font-semibold">Carga total na sessão:</span>{" "}
+              {results.totalCharge_mC.toFixed(1)} mC
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {results.doseLabel} (apenas interpretação didática, não substitui protocolos clínicos).
+            </p>
+          </Card>
+        </div>
+
+        {/* VISUAL / ANIMAÇÃO */}
+        <div className="space-y-4">
+          {/* Corpo + eletrodos + nervo */}
+          <Card className="relative p-4 overflow-hidden bg-slate-900 text-slate-50">
+            <p className="text-sm mb-2 font-medium">Distribuição da corrente e ativação do nervo</p>
+
+            {/* Segmento corporal */}
+            <div className="relative mx-auto mt-2 h-40 w-full max-w-md rounded-3xl bg-gradient-to-b from-slate-700 to-slate-800 border border-slate-600">
+              {/* Tecido muscular de fundo */}
+              <div className="absolute inset-x-4 inset-y-6 rounded-2xl bg-gradient-to-r from-emerald-900/60 to-sky-900/40" />
+
+              {/* Eletrodos */}
+              <div className="absolute -top-3 left-10 h-8 w-16 rounded-xl border border-slate-200 bg-slate-100 shadow-lg flex items-center justify-center text-[10px] text-slate-700">
+                +
+              </div>
+              <div className="absolute -top-3 right-10 h-8 w-16 rounded-xl border border-slate-200 bg-slate-100 shadow-lg flex items-center justify-center text-[10px] text-slate-700">
+                -
+              </div>
+
+              {/* "Campo" entre eletrodos – brilho varia com intensidade */}
+              <div
+                className="absolute top-4 left-1/2 -translate-x-1/2 h-24 w-40 rounded-full bg-emerald-400/20 blur-2xl transition-all"
+                style={{
+                  opacity: 0.3 + intensityFactor * 0.7,
+                  boxShadow: `0 0 ${10 + intensityFactor * 25}px rgba(45, 212, 191, 0.9)`,
+                }}
+              />
+
+              {/* Nervo – linha horizontal */}
+              <div className="absolute left-6 right-6 top-1/2 h-1 rounded-full bg-amber-200/80 shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
+
+              {/* Bolinhas se movendo ao longo do nervo (potencial de ação) */}
+              <div
+                className="absolute left-6 right-6 top-1/2 h-1 overflow-hidden"
+                style={{ transform: "translateY(-50%)" }}
+              >
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="absolute h-2 w-2 rounded-full bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.9)]"
+                    style={{
+                      animation: `nervePulse ${nerveAnimationDuration}s linear infinite`,
+                      animationDelay: `${i * (nerveAnimationDuration / 3)}s`,
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Fibras musculares estilizadas */}
+              <div className="absolute inset-x-8 bottom-5 h-10 flex gap-1 opacity-70">
+                {Array.from({ length: 10 }).map((_, idx) => (
+                  <div
+                    key={idx}
+                    className="flex-1 rounded-full bg-emerald-500/40"
+                    style={{
+                      transform: `scaleY(${0.7 + intensityFactor * 0.6})`,
+                      transition: "transform 0.3s ease",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-3 text-[11px] text-slate-300">
+              A cor e o brilho entre os eletrodos aumentam com a intensidade (mA). As bolinhas que
+              percorrem o "nervo" ficam mais rápidas conforme a frequência (Hz) aumenta, ilustrando
+              mais pulsos por segundo. As barras do músculo sugerem maior recrutamento com maior
+              intensidade.
+            </p>
+          </Card>
+
+          {/* Timeline de pulsos */}
+          <Card className="p-4">
+            <p className="text-sm mb-2 font-medium">Padrão de pulsos no tempo</p>
+            <div className="relative h-20 overflow-hidden bg-slate-100 rounded-lg border">
+              <div className="absolute inset-x-2 bottom-2 h-[2px] bg-slate-300" />
+              <div className="absolute inset-x-2 top-2 flex items-end gap-[2px]">
+                {pulseBars.map((_, idx) => {
+                  // posição relativa de 0 a 1
+                  const t = idx / pulseBars.length;
+                  // imita espaçamento diferente conforme frequência
+                  const opacity = 0.2 + 0.8 * frequencyFactor;
+                  const heightFactor = 0.2 + intensityFactor * 0.8;
+                  const widthPx = 2 + pulseWidthFactor * 8;
+
+                  return (
+                    <div
+                      key={idx}
+                      style={{
+                        height: `${20 + 40 * heightFactor}px`,
+                        width: `${widthPx}px`,
+                        marginRight: `${2 + (1 - frequencyFactor) * 4}px`,
+                        opacity,
+                      }}
+                      className="bg-emerald-500 rounded-t-full transition-all"
+                    />
+                  );
+                })}
+              </div>
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Barras mais altas representam maior intensidade (mA); barras mais largas, maior
+              largura de pulso (µs); maior frequência aproxima as barras, indicando mais pulsos em
+              menos tempo.
+            </p>
+          </Card>
+        </div>
+      </div>
+    </Card>
   );
 }
