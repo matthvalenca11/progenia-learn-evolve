@@ -248,8 +248,8 @@ export default function LessonViewer() {
               {lab.lab_type === "mri_viewer" && <MRIViewer config={lab.config_data} />}
               {lab.lab_type === "ultrassom_simulador" && <UltrasoundSimulator config={lab.config_data} />}
               {lab.lab_type === "eletroterapia_sim" && <EletroterapiaLab config={lab.config_data} />}
-              {lab.lab_type === "eletroterapia_dose" && <ElectrotherapyDoseLab config={lab.config_data} />}
-              {lab.lab_type === "ultrassom_terapeutico" && <TherapeuticUltrasoundLab config={lab.config_data} />}
+              {lab.lab_type === "eletroterapia_dose" && <ElectrotherapyDoseLab />}
+              {lab.lab_type === "ultrassom_terapeutico" && <TherapeuticUltrasoundLab />}
               {lab.lab_type === "termico_sim" && <ThermalLab config={lab.config_data} />}
             </>}
 
