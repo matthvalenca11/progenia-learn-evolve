@@ -16,6 +16,8 @@ import { MRIViewer } from "@/components/labs/MRIViewer";
 import { UltrasoundSimulator } from "@/components/labs/UltrasoundSimulator";
 import { EletroterapiaLab } from "@/components/labs/EletroterapiaLab";
 import { ThermalLab } from "@/components/labs/ThermalLab";
+import { ElectrotherapyDoseLab } from "@/components/labs/ElectrotherapyDoseLab";
+import { TherapeuticUltrasoundLab } from "@/components/labs/TherapeuticUltrasoundLab";
 import QuizTaker from "@/components/QuizTaker";
 import { toast } from "@/hooks/use-toast";
 export default function LessonViewer() {
@@ -246,6 +248,8 @@ export default function LessonViewer() {
               {lab.lab_type === "mri_viewer" && <MRIViewer config={lab.config_data} />}
               {lab.lab_type === "ultrassom_simulador" && <UltrasoundSimulator config={lab.config_data} />}
               {lab.lab_type === "eletroterapia_sim" && <EletroterapiaLab config={lab.config_data} />}
+              {lab.lab_type === "eletroterapia_dose" && <ElectrotherapyDoseLab config={lab.config_data} />}
+              {lab.lab_type === "ultrassom_terapeutico" && <TherapeuticUltrasoundLab config={lab.config_data} />}
               {lab.lab_type === "termico_sim" && <ThermalLab config={lab.config_data} />}
             </>}
 
