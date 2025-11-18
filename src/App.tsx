@@ -8,6 +8,8 @@ import AITutor from "@/components/AITutor";
 import Landing from "@/pages/Landing";
 import Sobre from "@/pages/Sobre";
 import Auth from "@/pages/Auth";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import Dashboard from "@/pages/Dashboard";
 import Admin from "@/pages/Admin";
 import Profile from "@/pages/Profile";
@@ -43,6 +45,8 @@ const AppContent = () => {
           <Route path="/" element={<Landing />} />
           <Route path="/sobre" element={<Sobre />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/profile" element={<Profile />} />
