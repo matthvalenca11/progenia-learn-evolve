@@ -181,3 +181,17 @@ All colors MUST be HSL.
     opacity: 0;
   }
 }
+
+@keyframes ultraWave {
+  0% {
+    transform: translate(-50%, -10%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-50%, 110%);
+    opacity: 0;
+  }
+}
