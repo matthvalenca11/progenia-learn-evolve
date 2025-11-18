@@ -42,6 +42,7 @@ const Dashboard = () => {
 
   const { capsulas: capsulaRecomendadas, loading: loadingRecomendadas } = useCapsulasRecomendadas(userId, 3);
   const { capsula: capsulaInacabada, loading: loadingInacabada } = useCapsulaInacabada(userId);
+  const [capaUrls, setCapaUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -141,6 +142,49 @@ const Dashboard = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  // Load cover images for capsules
+  useEffect(() => {
+    const loadCapaUrls = async () => {
+      const urls: Record<string, string> = {};
+      
+      // Load recommended capsules covers
+      for (const capsula of capsulaRecomendadas) {
+        if (capsula.capa_path) {
+          try {
+            const { data } = await supabase.storage
+              .from("lesson-assets")
+              .createSignedUrl(capsula.capa_path, 3600);
+            if (data?.signedUrl) {
+              urls[capsula.id!] = data.signedUrl;
+            }
+          } catch (error) {
+            console.error("Erro ao carregar capa:", error);
+          }
+        }
+      }
+
+      // Load unfinished capsule cover
+      if (capsulaInacabada?.capa_path) {
+        try {
+          const { data } = await supabase.storage
+            .from("lesson-assets")
+            .createSignedUrl(capsulaInacabada.capa_path, 3600);
+          if (data?.signedUrl) {
+            urls[capsulaInacabada.id!] = data.signedUrl;
+          }
+        } catch (error) {
+          console.error("Erro ao carregar capa:", error);
+        }
+      }
+
+      setCapaUrls(urls);
+    };
+
+    if (capsulaRecomendadas.length > 0 || capsulaInacabada) {
+      loadCapaUrls();
+    }
+  }, [capsulaRecomendadas, capsulaInacabada]);
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     toast.success("Saiu com sucesso");
@@ -308,15 +352,30 @@ const Dashboard = () => {
               {capsulaRecomendadas.map((capsula) => (
                 <Card 
                   key={capsula.id}
-                  className="cursor-pointer hover:shadow-lg transition-smooth border-border bg-card hover:border-accent overflow-hidden"
+                  className="cursor-pointer hover:shadow-lg transition-smooth border-border bg-card hover:border-accent overflow-hidden group"
                   onClick={() => navigate(`/capsula/${capsula.id}`)}
                 >
-                  <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden">
-                    {capsula.visual_path && capsula.tipo_visual === "imagem" ? (
+                  <div className="aspect-video bg-muted flex items-center justify-center overflow-hidden relative">
+                    {capaUrls[capsula.id!] ? (
                       <img 
-                        src={capsula.visual_path} 
+                        src={capaUrls[capsula.id!]} 
                         alt={capsula.titulo}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        style={
+                          capaUrls[capsula.id!]?.endsWith('.gif')
+                            ? { animationPlayState: 'paused' }
+                            : undefined
+                        }
+                        onMouseEnter={(e) => {
+                          if (capaUrls[capsula.id!]?.endsWith('.gif')) {
+                            e.currentTarget.style.animationPlayState = 'running';
+                          }
+                        }}
+                        onMouseLeave={(e) => {
+                          if (capaUrls[capsula.id!]?.endsWith('.gif')) {
+                            e.currentTarget.style.animationPlayState = 'paused';
+                          }
+                        }}
                       />
                     ) : (
                       <Sparkles className="h-12 w-12 text-muted-foreground" />
@@ -343,16 +402,31 @@ const Dashboard = () => {
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">Continuar de Onde Parou</h2>
             <Card 
-              className="cursor-pointer hover:shadow-lg transition-smooth border-accent bg-card overflow-hidden"
+              className="cursor-pointer hover:shadow-lg transition-smooth border-accent bg-card overflow-hidden group"
               onClick={() => navigate(`/capsula/${capsulaInacabada.id}`)}
             >
               <div className="flex flex-col md:flex-row">
                 <div className="aspect-video md:w-48 bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
-                  {capsulaInacabada.visual_path && capsulaInacabada.tipo_visual === "imagem" ? (
+                  {capaUrls[capsulaInacabada.id!] ? (
                     <img 
-                      src={capsulaInacabada.visual_path} 
+                      src={capaUrls[capsulaInacabada.id!]} 
                       alt={capsulaInacabada.titulo}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      style={
+                        capaUrls[capsulaInacabada.id!]?.endsWith('.gif')
+                          ? { animationPlayState: 'paused' }
+                          : undefined
+                      }
+                      onMouseEnter={(e) => {
+                        if (capaUrls[capsulaInacabada.id!]?.endsWith('.gif')) {
+                          e.currentTarget.style.animationPlayState = 'running';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (capaUrls[capsulaInacabada.id!]?.endsWith('.gif')) {
+                          e.currentTarget.style.animationPlayState = 'paused';
+                        }
+                      }}
                     />
                   ) : (
                     <BookOpen className="h-12 w-12 text-muted-foreground" />
