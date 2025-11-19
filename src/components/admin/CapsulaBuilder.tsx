@@ -339,7 +339,8 @@ export default function CapsulaBuilder() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="mri_viewer">Visualizador de MRI</SelectItem>
-                      <SelectItem value="ultrasound_simulator">Simulador de Ultrassom</SelectItem>
+                      <SelectItem value="ultrasound_simulator">Simulador de Ultrassom (básico)</SelectItem>
+                      <SelectItem value="ultrassom_avancado">Simulador de Ultrassom (avançado)</SelectItem>
                       <SelectItem value="eletroterapia_lab">Lab de Eletroterapia</SelectItem>
                       <SelectItem value="thermal_lab">Lab Termal</SelectItem>
                     </SelectContent>
@@ -429,6 +430,53 @@ export default function CapsulaBuilder() {
                             })
                           }
                         />
+                      </div>
+                    </div>
+                  </Card>
+                )}
+                {/* Advanced Ultrasound Configuration */}
+                {capsula.tipo_lab === "ultrassom_avancado" && (
+                  <Card className="p-4 bg-slate-50 dark:bg-slate-900">
+                    <h4 className="text-sm font-semibold mb-3">Configuração do Ultrassom Avançado</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Anatomia Simulada</Label>
+                        <Select 
+                          value={capsula.ultrasound_lab_config?.presetAnatomy || 'generic'}
+                          onValueChange={(value) => {
+                            setCapsula({
+                              ...capsula,
+                              ultrasound_lab_config: {
+                                ...capsula.ultrasound_lab_config,
+                                enabled: true,
+                                presetAnatomy: value,
+                                showGain: true,
+                                showDepth: true,
+                                showFrequency: true,
+                                showFocus: true,
+                                showTGC: true,
+                                showDynamicRange: true,
+                                showTransducerSelector: true,
+                                showModeSelector: true,
+                                showCompoundToggle: true,
+                                showHarmonicToggle: true,
+                                showZoom: true,
+                              }
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="text-xs w-[150px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="generic">Genérico</SelectItem>
+                            <SelectItem value="muscle">Músculo</SelectItem>
+                            <SelectItem value="vascular">Vascular</SelectItem>
+                            <SelectItem value="tendon">Tendão</SelectItem>
+                            <SelectItem value="bone">Osso</SelectItem>
+                            <SelectItem value="liver">Fígado</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   </Card>
