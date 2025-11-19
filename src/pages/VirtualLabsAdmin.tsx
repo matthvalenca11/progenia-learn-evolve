@@ -22,11 +22,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Plus, Edit, Trash2, Search, Beaker } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Plus, Edit, Trash2, Search, Beaker, Play } from "lucide-react";
 import { toast } from "sonner";
 import { virtualLabService, VirtualLab } from "@/services/virtualLabService";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { UltrasoundSimulatorAdvanced } from "@/components/labs/UltrasoundSimulatorAdvanced";
 
 export default function VirtualLabsAdmin() {
   const navigate = useNavigate();
@@ -37,6 +45,8 @@ export default function VirtualLabsAdmin() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [labToDelete, setLabToDelete] = useState<VirtualLab | null>(null);
   const [usageCount, setUsageCount] = useState<number>(0);
+  const [testDialogOpen, setTestDialogOpen] = useState(false);
+  const [labToTest, setLabToTest] = useState<VirtualLab | null>(null);
 
   useEffect(() => {
     loadLabs();
@@ -91,6 +101,11 @@ export default function VirtualLabsAdmin() {
       setLabToDelete(null);
       setUsageCount(0);
     }
+  };
+
+  const handleTestClick = (lab: VirtualLab) => {
+    setLabToTest(lab);
+    setTestDialogOpen(true);
   };
 
   const getLabTypeBadge = (type: string) => {
@@ -206,6 +221,14 @@ export default function VirtualLabsAdmin() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          onClick={() => handleTestClick(lab)}
+                        >
+                          <Play className="h-4 w-4 mr-1" />
+                          Testar
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() => navigate(`/admin/labs/editar/${lab.id}`)}
                         >
                           <Edit className="h-4 w-4" />
@@ -250,6 +273,42 @@ export default function VirtualLabsAdmin() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Test Lab Dialog */}
+      <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Testar Laboratório: {labToTest?.name}</DialogTitle>
+            <DialogDescription>
+              {labToTest?.description || "Pré-visualização do laboratório virtual"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            {labToTest?.lab_type === "ultrasound" && (
+              <UltrasoundSimulatorAdvanced
+                config={labToTest.config_data as any}
+                title={labToTest.name}
+                description={labToTest.description || ""}
+              />
+            )}
+            {labToTest?.lab_type === "electrotherapy" && (
+              <div className="p-8 text-center text-muted-foreground">
+                <p>Simulador de eletroterapia em desenvolvimento</p>
+              </div>
+            )}
+            {labToTest?.lab_type === "thermal" && (
+              <div className="p-8 text-center text-muted-foreground">
+                <p>Simulador térmico em desenvolvimento</p>
+              </div>
+            )}
+            {!labToTest?.lab_type && (
+              <div className="p-8 text-center text-muted-foreground">
+                <p>Tipo de laboratório não identificado</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
