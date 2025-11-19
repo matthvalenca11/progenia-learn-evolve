@@ -21,10 +21,14 @@ import {
   Trophy, 
   Clock,
   BookOpen,
-  ArrowLeft,
-  Edit,
-  Lock
+  Lock,
+  Flame,
+  Zap
 } from "lucide-react";
+import { AppShell } from "@/components/layout/AppShell";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
+import { BottomNav } from "@/components/layout/BottomNav";
 
 const Profile = () => {
   const { user, profile, loading: authLoading } = useAuth();
@@ -34,6 +38,11 @@ const Profile = () => {
   const [progress, setProgress] = useState<any[]>([]);
   const [pointsHistory, setPointsHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changingPassword, setChangingPassword] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -69,14 +78,74 @@ const Profile = () => {
     }
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (newPassword.length < 6) {
+      toast.error("A nova senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+
+    if (newPassword === oldPassword) {
+      toast.error("A nova senha deve ser diferente da atual");
+      return;
+    }
+
+    try {
+      setChangingPassword(true);
+
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser?.user?.email) {
+        toast.error("Erro ao obter informações do usuário");
+        return;
+      }
+
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: currentUser.user.email,
+        password: oldPassword,
+      });
+
+      if (signInError) {
+        toast.error("Senha atual incorreta");
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (updateError) {
+        toast.error("Erro ao alterar senha");
+      } else {
+        toast.success("Senha alterada com sucesso!");
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      }
+    } catch (error) {
+      toast.error("Erro ao alterar senha");
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando perfil...</p>
-        </div>
-      </div>
+      <AppShell>
+        <PageContainer>
+          <div className="flex items-center justify-center min-h-[50vh]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <p className="text-muted-foreground">Carregando perfil...</p>
+            </div>
+          </div>
+        </PageContainer>
+      </AppShell>
     );
   }
 
@@ -88,343 +157,253 @@ const Profile = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-6">
-          <Button
-            variant="ghost"
-            onClick={() => navigate("/dashboard")}
-            className="mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Voltar ao Dashboard
-          </Button>
+    <>
+      <AppShell>
+        <PageContainer maxWidth="2xl" className="pb-20 md:pb-8">
+          {/* Profile Header - Mobile Optimized */}
+          <div className="mb-6 md:mb-8">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl sm:text-4xl font-bold flex-shrink-0">
+                {profile?.full_name?.charAt(0) || "U"}
+              </div>
 
-          <div className="flex items-start gap-6">
-            <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl font-bold">
-              {profile?.full_name?.charAt(0) || "U"}
+              <div className="flex-1 text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center sm:items-center gap-2 sm:gap-3 mb-2">
+                  <h1 className="text-2xl sm:text-3xl font-bold">{profile?.full_name || "Usuário"}</h1>
+                  <Badge variant="outline" className="text-sm">Nível {currentLevel}</Badge>
+                </div>
+                
+                {profile?.institution && (
+                  <p className="text-sm md:text-base text-muted-foreground mb-2">
+                    📍 {profile.institution}
+                  </p>
+                )}
+
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Zap className="h-4 w-4 text-primary" />
+                    <span>{stats?.total_xp || 0} XP</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <span>{stats?.streak_days || 0} dias</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <BookOpen className="h-4 w-4 text-secondary" />
+                    <span>{stats?.modules_completed || 0} módulos</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-3xl font-bold">{profile?.full_name || "Usuário"}</h1>
-                <Badge variant="outline">Nível {currentLevel}</Badge>
+            {/* Level Progress */}
+            <div className="mt-6">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="font-medium">Nível {currentLevel}</span>
+                <span className="text-muted-foreground">
+                  {Math.round((stats?.total_xp || 0) % 100)} / 100 XP
+                </span>
               </div>
-              
-              {profile?.institution && (
-                <p className="text-muted-foreground mb-2">📍 {profile.institution}</p>
-              )}
-              
-              {profile?.professional_role && (
-                <p className="text-muted-foreground">{profile.professional_role}</p>
-              )}
-
-              <Button variant="outline" size="sm" className="mt-3">
-                <Edit className="mr-2 h-4 w-4" />
-                Editar Perfil
-              </Button>
+              <Progress value={levelProgress} className="h-2" />
             </div>
           </div>
-        </div>
-      </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Estatísticas principais */}
-        <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-sm text-muted-foreground">XP Total</p>
-                <p className="text-2xl font-bold">{stats?.total_xp || 0}</p>
-              </div>
-            </div>
-            <Progress value={levelProgress} className="mt-4" />
-            <p className="text-xs text-muted-foreground mt-2">
-              {100 - (stats?.total_xp % 100 || 0)} XP para o próximo nível
-            </p>
-          </Card>
+          {/* Stats Grid */}
+          <ResponsiveGrid cols={{ default: 2, sm: 2, md: 4 }} gap="md" className="mb-6 md:mb-8">
+            <Card>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 md:p-3 rounded-lg bg-primary/10">
+                    <Trophy className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">Badges</p>
+                    <p className="text-lg md:text-2xl font-bold">{badges.length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Trophy className="h-8 w-8 text-yellow-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Streak</p>
-                <p className="text-2xl font-bold">{stats?.streak_days || 0} dias</p>
-              </div>
-            </div>
-          </Card>
+            <Card>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 md:p-3 rounded-lg bg-secondary/10">
+                    <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-secondary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">XP Total</p>
+                    <p className="text-lg md:text-2xl font-bold">{stats?.total_xp || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <BookOpen className="h-8 w-8 text-blue-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Módulos</p>
-                <p className="text-2xl font-bold">{stats?.modules_completed || 0}</p>
-              </div>
-            </div>
-          </Card>
+            <Card>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 md:p-3 rounded-lg bg-accent/10">
+                    <Clock className="h-5 w-5 md:h-6 md:w-6 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">Tempo</p>
+                    <p className="text-lg md:text-2xl font-bold">{stats?.total_time_minutes || 0}m</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center gap-3">
-              <Clock className="h-8 w-8 text-green-500" />
-              <div>
-                <p className="text-sm text-muted-foreground">Horas</p>
-                <p className="text-2xl font-bold">
-                  {Math.floor((stats?.total_time_minutes || 0) / 60)}h
-                </p>
-              </div>
-            </div>
-          </Card>
-        </div>
+            <Card>
+              <CardContent className="p-4 md:p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 md:p-3 rounded-lg bg-primary/10">
+                    <Flame className="h-5 w-5 md:h-6 md:w-6 text-orange-500" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs md:text-sm text-muted-foreground truncate">Sequência</p>
+                    <p className="text-lg md:text-2xl font-bold">{stats?.streak_days || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </ResponsiveGrid>
 
-        {/* Tabs */}
-        <Tabs defaultValue="badges" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="badges">
-              <Award className="mr-2 h-4 w-4" />
-              Badges ({badges.length})
-            </TabsTrigger>
-            <TabsTrigger value="progress">
-              <BookOpen className="mr-2 h-4 w-4" />
-              Progresso
-            </TabsTrigger>
-            <TabsTrigger value="history">
-              <TrendingUp className="mr-2 h-4 w-4" />
-              Histórico de Pontos
-            </TabsTrigger>
-          </TabsList>
+          {/* Tabs - Mobile Optimized */}
+          <Tabs defaultValue="badges" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6">
+              <TabsTrigger value="badges" className="text-xs sm:text-sm">
+                <Award className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Badges</span>
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-xs sm:text-sm">
+                <TrendingUp className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Histórico</span>
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="text-xs sm:text-sm">
+                <Lock className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Senha</span>
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="badges">
-            {badges.length === 0 ? (
-              <Card className="p-12 text-center">
-                <Award className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Nenhum Badge Ainda</h3>
-                <p className="text-muted-foreground">
-                  Complete aulas e módulos para ganhar badges!
-                </p>
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {badges.map((badge) => (
-                  <Card key={badge.id} className="p-6 text-center">
-                    <div className="text-4xl mb-3">{badge.badges.icon || "🏆"}</div>
-                    <h4 className="font-semibold mb-1">{badge.badges.name}</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {badge.badges.description}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(badge.earned_at).toLocaleDateString("pt-BR")}
-                    </p>
+            {/* Badges Tab */}
+            <TabsContent value="badges">
+              <ResponsiveGrid cols={{ default: 2, sm: 3, lg: 4 }} gap="md">
+                {badges.map((badge: any) => (
+                  <Card key={badge.id} className="text-center">
+                    <CardContent className="p-4">
+                      <div className="text-4xl mb-2">{badge.icon || "🏆"}</div>
+                      <h3 className="font-semibold text-sm mb-1">{badge.name}</h3>
+                      <p className="text-xs text-muted-foreground line-clamp-2">
+                        {badge.description}
+                      </p>
+                    </CardContent>
                   </Card>
                 ))}
-              </div>
-            )}
-          </TabsContent>
+                {badges.length === 0 && (
+                  <Card className="col-span-full">
+                    <CardContent className="p-8 text-center">
+                      <Award className="h-12 w-12 mx-auto mb-3 text-muted-foreground" />
+                      <p className="text-muted-foreground">Nenhum badge conquistado ainda</p>
+                    </CardContent>
+                  </Card>
+                )}
+              </ResponsiveGrid>
+            </TabsContent>
 
-          <TabsContent value="progress">
-            {progress.length === 0 ? (
-              <Card className="p-12 text-center">
-                <BookOpen className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Nenhum Progresso Ainda</h3>
-                <p className="text-muted-foreground">
-                  Comece a estudar para ver seu progresso aqui!
-                </p>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {progress.map((item) => (
-                  <Card key={item.id} className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-semibold">{item.lessons?.title}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Status: {item.status === "concluido" ? "✅ Concluído" : "📖 Em progresso"}
-                        </p>
+            {/* History Tab */}
+            <TabsContent value="history">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl">Histórico de Pontos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {pointsHistory.map((item: any) => (
+                      <div key={item.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{item.descricao}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(item.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <Badge variant={item.pontos > 0 ? "default" : "secondary"} className="ml-2">
+                          {item.pontos > 0 ? "+" : ""}{item.pontos} XP
+                        </Badge>
                       </div>
-                      <Badge variant={item.status === "concluido" ? "default" : "outline"}>
-                        {item.status}
-                      </Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="history">
-            {pointsHistory.length === 0 ? (
-              <Card className="p-12 text-center">
-                <TrendingUp className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-xl font-semibold mb-2">Nenhum Histórico</h3>
-                <p className="text-muted-foreground">
-                  Complete atividades para ganhar pontos!
-                </p>
+                    ))}
+                    {pointsHistory.length === 0 && (
+                      <p className="text-center text-muted-foreground py-8">
+                        Nenhuma atividade recente
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
               </Card>
-            ) : (
-              <div className="space-y-3">
-                {pointsHistory.map((entry) => (
-                  <Card key={entry.id} className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{entry.descricao}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {new Date(entry.created_at).toLocaleString("pt-BR")}
-                        </p>
-                      </div>
-                      <Badge className="bg-green-500">+{entry.pontos} XP</Badge>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </TabsContent>
 
-        {/* Change Password Section */}
-        <Card className="mt-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Lock className="h-5 w-5" />
-              Alterar Senha
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChangePasswordForm />
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            {/* Settings Tab */}
+            <TabsContent value="settings">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg md:text-xl flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Alterar Senha
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="old-password">Senha Atual</Label>
+                      <Input
+                        id="old-password"
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        required
+                        className="touch-target"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password">Nova Senha</Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        className="touch-target"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                      <Input
+                        id="confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="touch-target"
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={changingPassword}
+                      className="w-full touch-target"
+                    >
+                      {changingPassword ? "Alterando..." : "Alterar Senha"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </PageContainer>
+      </AppShell>
+      <BottomNav />
+    </>
   );
 };
-
-// Separate component for Change Password form
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
-    newPassword: z.string().min(6, "A nova senha deve ter pelo menos 6 caracteres").max(100),
-    confirmPassword: z.string(),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "As senhas não coincidem",
-    path: ["confirmPassword"],
-  })
-  .refine((data) => data.newPassword !== data.currentPassword, {
-    message: "A nova senha deve ser diferente da senha atual",
-    path: ["newPassword"],
-  });
-
-function ChangePasswordForm() {
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { user } = useAuth();
-
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    try {
-      const validated = changePasswordSchema.parse({
-        currentPassword,
-        newPassword,
-        confirmPassword,
-      });
-
-      setLoading(true);
-
-      // Get current user email
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      if (!currentUser?.email) {
-        toast.error("Erro ao obter informações do usuário");
-        return;
-      }
-
-      // Verify current password by re-authenticating
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: currentUser.email,
-        password: validated.currentPassword,
-      });
-
-      if (signInError) {
-        toast.error("Senha atual incorreta");
-        return;
-      }
-
-      // Update to new password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: validated.newPassword,
-      });
-
-      if (updateError) {
-        toast.error("Erro ao alterar senha", {
-          description: updateError.message,
-        });
-      } else {
-        toast.success("Senha alterada com sucesso!");
-        setCurrentPassword("");
-        setNewPassword("");
-        setConfirmPassword("");
-      }
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        toast.error(error.errors[0].message);
-      } else {
-        toast.error("Ocorreu um erro ao alterar a senha");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <form onSubmit={handleChangePassword} className="space-y-4 max-w-md">
-      <div>
-        <Label htmlFor="currentPassword">Senha Atual</Label>
-        <Input
-          id="currentPassword"
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-
-      <Separator />
-
-      <div>
-        <Label htmlFor="newPassword">Nova Senha</Label>
-        <Input
-          id="newPassword"
-          type="password"
-          placeholder="Mínimo 6 caracteres"
-          value={newPassword}
-          onChange={(e) => setNewPassword(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-
-      <div>
-        <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
-        <Input
-          id="confirmPassword"
-          type="password"
-          placeholder="Digite a senha novamente"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-          disabled={loading}
-        />
-      </div>
-
-      <Button type="submit" disabled={loading}>
-        {loading ? "Alterando..." : "Alterar Senha"}
-      </Button>
-    </form>
-  );
-}
 
 export default Profile;

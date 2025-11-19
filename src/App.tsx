@@ -34,15 +34,13 @@ const AppContent = () => {
 
   return (
     <div
-      className="min-h-screen flex flex-col bg-background text-foreground overflow-hidden"
+      className="min-h-screen flex flex-col bg-background text-foreground"
       style={{
-        // safe area do iOS (notch e barra inferior)
         paddingTop: "env(safe-area-inset-top)",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
-      {/* Conteúdo principal rolável, com padding global para mobile */}
-      <main className="flex-1 flex flex-col overflow-y-auto px-4 pb-8 pt-2 md:px-8 md:pb-10 md:pt-4">
+      <main className="flex-1 flex flex-col overflow-y-auto">
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/sobre" element={<Sobre />} />
@@ -61,20 +59,13 @@ const AppContent = () => {
           <Route path="/admin/labs" element={<VirtualLabsAdmin />} />
           <Route path="/admin/labs/novo" element={<VirtualLabEditor />} />
           <Route path="/admin/labs/editar/:labId" element={<VirtualLabEditor />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
-      {/* Tutor de IA: só em telas médias pra cima, pra não matar o mobile */}
+      {/* AI Tutor - Hidden on mobile, visible on desktop */}
       {shouldShowAITutor && (
         <div className="hidden md:block">
-          {/* Se o AITutor já tiver posição própria, ele continua controlando.
-             Se você quiser forçar posição flutuante:
-             <div className="fixed bottom-4 right-4 z-40">
-               <AITutor />
-             </div>
-          */}
           <AITutor />
         </div>
       )}

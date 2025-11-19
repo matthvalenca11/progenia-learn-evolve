@@ -6,13 +6,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   BookOpen, 
   Users, 
-  Home,
   GraduationCap,
   Handshake,
   UsersRound,
   Beaker,
   Award,
-  FlaskConical
+  FlaskConical,
+  Menu
 } from "lucide-react";
 import logo from "@/assets/logo.png";
 import { toast } from "sonner";
@@ -25,24 +25,24 @@ import { ModulesManager } from "@/components/admin/ModulesManager";
 import { MediaLibrary } from "@/components/admin/MediaLibrary";
 import CapsulasList from "@/components/admin/CapsulasList";
 import VirtualLabsAdmin from "./VirtualLabsAdmin";
+import { PageContainer } from "@/components/layout/PageContainer";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const Admin = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const checkAdminAccess = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
 
       if (!session) {
         navigate("/auth");
         return;
       }
 
-      // Verificar se é admin via tabela user_roles
       const { data: roleData } = await supabase
         .from("user_roles")
         .select("role")
@@ -76,66 +76,75 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Navbar */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/dashboard")}>
-            <img src={logo} alt="ProGenia" className="h-10" />
-            <span className="text-xl font-bold gradient-text">ProGenia Admin</span>
+      {/* Mobile-Friendly Navbar */}
+      <nav className="sticky-header-mobile border-b border-border bg-background/95 backdrop-blur">
+        <PageContainer padding="sm">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => navigate("/dashboard")}>
+              <img src={logo} alt="ProGenia" className="h-8 md:h-10" />
+              <span className="text-lg md:text-xl font-bold gradient-text hidden sm:inline">
+                ProGenia Admin
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="ghost" onClick={() => navigate("/dashboard")} className="hidden md:flex">
+                Dashboard
+              </Button>
+              <Button variant="ghost" onClick={() => navigate("/profile")} className="hidden md:flex">
+                Perfil
+              </Button>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => navigate("/dashboard")}>
-              <Home className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-            <Button variant="ghost" onClick={() => navigate("/profile")}>
-              Perfil
-            </Button>
-          </div>
-        </div>
+        </PageContainer>
       </nav>
 
-      {/* Conteúdo Principal */}
-      <div className="container mx-auto px-4 py-8">
+      {/* Main Content */}
+      <PageContainer maxWidth="2xl" padding="md">
         <Tabs defaultValue="modules" className="w-full">
-          <TabsList className="grid w-full grid-cols-9 gap-1">
-            <TabsTrigger value="modules">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Módulos
-            </TabsTrigger>
-            <TabsTrigger value="capsulas">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Cápsulas
-            </TabsTrigger>
-            <TabsTrigger value="lessons">
-              <GraduationCap className="h-4 w-4 mr-2" />
-              Aulas
-            </TabsTrigger>
-            <TabsTrigger value="labs">
-              <FlaskConical className="h-4 w-4 mr-2" />
-              Labs Virtuais
-            </TabsTrigger>
-            <TabsTrigger value="media">
-              <Beaker className="h-4 w-4 mr-2" />
-              Biblioteca
-            </TabsTrigger>
-            <TabsTrigger value="team">
-              <UsersRound className="h-4 w-4 mr-2" />
-              Equipe
-            </TabsTrigger>
-            <TabsTrigger value="partners">
-              <Handshake className="h-4 w-4 mr-2" />
-              Parceiros
-            </TabsTrigger>
-            <TabsTrigger value="users">
-              <Users className="h-4 w-4 mr-2" />
-              Usuários
-            </TabsTrigger>
-            <TabsTrigger value="gamification">
-              <Award className="h-4 w-4 mr-2" />
-              Gamificação
-            </TabsTrigger>
-          </TabsList>
+          {/* Mobile: Horizontal scrollable tabs */}
+          <div className="overflow-x-auto -mx-4 px-4 md:mx-0 md:px-0">
+            <TabsList className="inline-flex w-max md:grid md:w-full md:grid-cols-9 gap-1 mb-6">
+              <TabsTrigger value="modules" className="text-xs md:text-sm whitespace-nowrap">
+                <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
+                Módulos
+              </TabsTrigger>
+              <TabsTrigger value="capsulas" className="text-xs md:text-sm whitespace-nowrap">
+                <BookOpen className="h-4 w-4 mr-1 md:mr-2" />
+                Cápsulas
+              </TabsTrigger>
+              <TabsTrigger value="lessons" className="text-xs md:text-sm whitespace-nowrap">
+                <GraduationCap className="h-4 w-4 mr-1 md:mr-2" />
+                Aulas
+              </TabsTrigger>
+              <TabsTrigger value="labs" className="text-xs md:text-sm whitespace-nowrap">
+                <FlaskConical className="h-4 w-4 mr-1 md:mr-2" />
+                Labs
+              </TabsTrigger>
+              <TabsTrigger value="media" className="text-xs md:text-sm whitespace-nowrap">
+                <Beaker className="h-4 w-4 mr-1 md:mr-2" />
+                Mídia
+              </TabsTrigger>
+              <TabsTrigger value="team" className="text-xs md:text-sm whitespace-nowrap">
+                <UsersRound className="h-4 w-4 mr-1 md:mr-2" />
+                Time
+              </TabsTrigger>
+              <TabsTrigger value="partners" className="text-xs md:text-sm whitespace-nowrap">
+                <Handshake className="h-4 w-4 mr-1 md:mr-2" />
+                Parceiros
+              </TabsTrigger>
+              <TabsTrigger value="users" className="text-xs md:text-sm whitespace-nowrap">
+                <Users className="h-4 w-4 mr-1 md:mr-2" />
+                Usuários
+              </TabsTrigger>
+              <TabsTrigger value="gamification" className="text-xs md:text-sm whitespace-nowrap">
+                <Award className="h-4 w-4 mr-1 md:mr-2" />
+                Badges
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="modules">
             <ModulesManager />
@@ -173,7 +182,7 @@ const Admin = () => {
             <GamificationManager />
           </TabsContent>
         </Tabs>
-      </div>
+      </PageContainer>
     </div>
   );
 };
