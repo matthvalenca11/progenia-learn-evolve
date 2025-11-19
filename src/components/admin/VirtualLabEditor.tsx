@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import { virtualLabService, VirtualLab, VirtualLabType } from "@/services/virtualLabService";
 import { getAllPresets, getDefaultLayersForPreset, getDefaultInclusionsForPreset } from "@/config/ultrasoundPresets";
 import { UltrasoundSimulatorAdvanced } from "@/components/labs/UltrasoundSimulatorAdvanced";
+import { useMemo, useCallback } from "react";
 import { AcousticLayersEditor } from "./AcousticLayersEditor";
 import { InclusionsEditor } from "./InclusionsEditor";
 
@@ -111,9 +112,12 @@ export default function VirtualLabEditor() {
   };
 
   const ultrasoundConfig = lab.config_data.ultrasoundConfig;
-  const currentPreset = ultrasoundConfig ? allPresets.find(p => p.id === ultrasoundConfig.presetId) : null;
+  const currentPreset = useMemo(
+    () => ultrasoundConfig ? allPresets.find(p => p.id === ultrasoundConfig.presetId) : null,
+    [ultrasoundConfig?.presetId]
+  );
 
-  const handlePresetChange = (presetId: string) => {
+  const handlePresetChange = useCallback((presetId: string) => {
     if (!ultrasoundConfig) return;
     
     setLab({
@@ -132,7 +136,46 @@ export default function VirtualLabEditor() {
     toast.info("Preset alterado", { 
       description: "Camadas e inclusões foram redefinidas para o novo preset" 
     });
-  };
+  }, [lab, ultrasoundConfig]);
+
+  // Memoize simulator config to prevent unnecessary re-renders
+  const simulatorConfig = useMemo(() => {
+    if (!ultrasoundConfig || !currentPreset) return null;
+    
+    return {
+      enabled: true,
+      showGain: ultrasoundConfig.controls.showGain,
+      showDepth: ultrasoundConfig.controls.showDepth,
+      showFrequency: ultrasoundConfig.controls.showFrequency,
+      showFocus: ultrasoundConfig.controls.showFocus,
+      showTGC: false,
+      showDynamicRange: false,
+      showTransducerSelector: false,
+      showModeSelector: false,
+      presetAnatomy: (currentPreset.tissueProfile || "muscle") as any,
+      lockGain: false,
+      lockDepth: false,
+      lockFrequency: false,
+      lockTransducer: false,
+      initialGain: currentPreset.recommendedGain || 50,
+      initialDepth: currentPreset.recommendedDepthCm || 6,
+      initialFrequency: currentPreset.recommendedFrequencyMHz || 7.5,
+      initialTransducer: (currentPreset.transducerType === 'linear' || currentPreset.transducerType === 'convex' || currentPreset.transducerType === 'microconvex') 
+        ? currentPreset.transducerType 
+        : "linear" as const,
+      initialMode: "b-mode" as const,
+    };
+  }, [
+    ultrasoundConfig?.controls.showGain,
+    ultrasoundConfig?.controls.showDepth,
+    ultrasoundConfig?.controls.showFrequency,
+    ultrasoundConfig?.controls.showFocus,
+    currentPreset?.tissueProfile,
+    currentPreset?.recommendedGain,
+    currentPreset?.recommendedDepthCm,
+    currentPreset?.recommendedFrequencyMHz,
+    currentPreset?.transducerType,
+  ]);
 
   if (loading && isEdit) {
     return (
@@ -344,33 +387,9 @@ export default function VirtualLabEditor() {
               <CardDescription>Visualização em tempo real do laboratório configurado</CardDescription>
             </CardHeader>
             <CardContent>
-              {lab.lab_type === "ultrasound" && ultrasoundConfig ? (
+              {lab.lab_type === "ultrasound" && simulatorConfig ? (
                 <div className="rounded-lg overflow-hidden bg-black">
-                  <UltrasoundSimulatorAdvanced
-                    config={{
-                      enabled: true,
-                      showGain: ultrasoundConfig.controls.showGain,
-                      showDepth: ultrasoundConfig.controls.showDepth,
-                      showFrequency: ultrasoundConfig.controls.showFrequency,
-                      showFocus: ultrasoundConfig.controls.showFocus,
-                      showTGC: false,
-                      showDynamicRange: false,
-                      showTransducerSelector: false,
-                      showModeSelector: false,
-                      presetAnatomy: (currentPreset?.tissueProfile || "muscle") as any,
-                      lockGain: false,
-                      lockDepth: false,
-                      lockFrequency: false,
-                      lockTransducer: false,
-                      initialGain: currentPreset?.recommendedGain || 50,
-                      initialDepth: currentPreset?.recommendedDepthCm || 6,
-                      initialFrequency: currentPreset?.recommendedFrequencyMHz || 7.5,
-                      initialTransducer: (currentPreset?.transducerType === 'linear' || currentPreset?.transducerType === 'convex') 
-                        ? currentPreset.transducerType 
-                        : "linear",
-                      initialMode: "b-mode",
-                    }}
-                  />
+                  <UltrasoundSimulatorAdvanced config={simulatorConfig} />
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">

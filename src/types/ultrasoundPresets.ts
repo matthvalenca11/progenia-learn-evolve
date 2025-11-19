@@ -25,7 +25,7 @@ export type UltrasoundAnatomyPreset = {
   label: string;
   shortDescription: string;
   clinicalTagline: string;
-  transducerType: "linear" | "convex" | "phased";
+  transducerType: "linear" | "convex" | "microconvex";
   recommendedFrequencyMHz: number;
   recommendedDepthCm: number;
   recommendedFocusCm: number;
