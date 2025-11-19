@@ -25,7 +25,6 @@ import {
   Flame,
   Zap
 } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -136,16 +135,14 @@ const Profile = () => {
 
   if (authLoading || loading) {
     return (
-      <AppShell>
-        <PageContainer>
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-              <p className="text-muted-foreground">Carregando perfil...</p>
-            </div>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Carregando perfil...</p>
           </div>
-        </PageContainer>
-      </AppShell>
+        </div>
+      </PageContainer>
     );
   }
 
@@ -158,9 +155,8 @@ const Profile = () => {
 
   return (
     <>
-      <AppShell>
-        <PageContainer maxWidth="2xl" className="pb-20 md:pb-8">
-          {/* Profile Header - Mobile Optimized */}
+      <PageContainer maxWidth="2xl" className="pb-20 md:pb-8">
+        {/* Profile Header - Mobile Optimized */}
           <div className="mb-6 md:mb-8">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
               <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full bg-primary/10 flex items-center justify-center text-3xl sm:text-4xl font-bold flex-shrink-0">
@@ -398,9 +394,8 @@ const Profile = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-          </Tabs>
-        </PageContainer>
-      </AppShell>
+        </Tabs>
+      </PageContainer>
       <BottomNav />
     </>
   );

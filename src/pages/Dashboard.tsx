@@ -22,7 +22,6 @@ import {
 import { toast } from "sonner";
 import { enrollmentService } from "@/services/enrollmentService";
 import { useCapsulasRecomendadas, useCapsulaInacabada } from "@/hooks/useCapsulas";
-import { AppShell } from "@/components/layout/AppShell";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { ResponsiveGrid } from "@/components/layout/ResponsiveGrid";
 
@@ -205,22 +204,19 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <AppShell>
-        <PageContainer>
-          <div className="flex items-center justify-center min-h-[50vh]">
-            <p className="text-muted-foreground">Carregando...</p>
-          </div>
-        </PageContainer>
-      </AppShell>
+      <PageContainer>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <p className="text-muted-foreground">Carregando...</p>
+        </div>
+      </PageContainer>
     );
   }
 
   const levelProgress = stats ? ((stats.total_xp % 1000) / 1000) * 100 : 0;
 
   return (
-    <AppShell>
-      <PageContainer maxWidth="2xl">
-        {/* Welcome Header - Mobile Optimized */}
+    <PageContainer maxWidth="2xl">
+      {/* Welcome Header - Mobile Optimized */}
         <div className="mb-6 md:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -450,7 +446,6 @@ const Dashboard = () => {
           </ResponsiveGrid>
         </div>
       </PageContainer>
-    </AppShell>
   );
 };
 

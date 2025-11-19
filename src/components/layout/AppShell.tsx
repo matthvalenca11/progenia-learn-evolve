@@ -14,31 +14,31 @@ import {
   FlaskConical,
 } from "lucide-react";
 import logo from "@/assets/logo.png";
-import { useAuth } from "@/hooks/useAuth";
-import { authService } from "@/services/authService";
 import { toast } from "sonner";
 
 interface AppShellProps {
   children: ReactNode;
   showMobileNav?: boolean;
+  isAuthenticated?: boolean;
+  onLogout?: () => void;
 }
 
 /**
  * App shell with mobile-friendly navigation drawer
  */
-export const AppShell = ({ children, showMobileNav = true }: AppShellProps) => {
+export const AppShell = ({ 
+  children, 
+  showMobileNav = true,
+  isAuthenticated = false,
+  onLogout
+}: AppShellProps) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
-    try {
-      await authService.signOut();
-      toast.success("Logout realizado com sucesso");
-      navigate("/auth");
-    } catch (error) {
-      toast.error("Erro ao fazer logout");
+    if (onLogout) {
+      await onLogout();
     }
   };
 
@@ -52,9 +52,9 @@ export const AppShell = ({ children, showMobileNav = true }: AppShellProps) => {
   const isActivePath = (path: string) => location.pathname === path;
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background safe-area-mobile">
       {/* Mobile Header */}
-      {showMobileNav && (
+      {showMobileNav && isAuthenticated && (
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex h-16 items-center justify-between px-4">
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
