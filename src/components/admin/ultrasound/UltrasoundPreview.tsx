@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUltrasoundLabStore } from "@/stores/ultrasoundLabStore";
-import { UltrasoundEngine } from "@/simulator/ultrasound/UltrasoundEngine";
+import { PhysicsUltrasoundEngine } from "@/simulator/ultrasound/PhysicsUltrasoundEngine";
 import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const UltrasoundPreview = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const engineRef = useRef<UltrasoundEngine | null>(null);
+  const engineRef = useRef<PhysicsUltrasoundEngine | null>(null);
   
   const {
     layers,
@@ -40,7 +40,7 @@ export const UltrasoundPreview = () => {
       time: 0,
     };
     
-    engineRef.current = new UltrasoundEngine(canvasRef.current, config);
+    engineRef.current = new PhysicsUltrasoundEngine(canvasRef.current, config);
     engineRef.current.start();
     
     return () => {
