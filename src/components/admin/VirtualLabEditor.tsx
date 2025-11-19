@@ -16,6 +16,7 @@ import { UltrasoundSimulatorAdvanced } from "@/components/labs/UltrasoundSimulat
 import { useMemo, useCallback } from "react";
 import { AcousticLayersEditor } from "./AcousticLayersEditor";
 import { InclusionsEditor } from "./InclusionsEditor";
+import { ComplexityLevel, getFeaturesByComplexity, DEFAULT_SIMULATION_FEATURES } from "@/types/ultrasoundAdvanced";
 
 export default function VirtualLabEditor() {
   const navigate = useNavigate();
@@ -38,6 +39,8 @@ export default function VirtualLabEditor() {
         },
         layers: getDefaultLayersForPreset("generic_muscle"),
         inclusions: getDefaultInclusionsForPreset("generic_muscle"),
+        simulationFeatures: DEFAULT_SIMULATION_FEATURES,
+        complexityLevel: "intermediario",
       },
     },
   });
@@ -65,6 +68,13 @@ export default function VirtualLabEditor() {
           data.config_data.ultrasoundConfig.inclusions = getDefaultInclusionsForPreset(
             data.config_data.ultrasoundConfig.presetId
           );
+        }
+        // Ensure simulation features exist
+        if (data.config_data.ultrasoundConfig && !data.config_data.ultrasoundConfig.simulationFeatures) {
+          data.config_data.ultrasoundConfig.simulationFeatures = DEFAULT_SIMULATION_FEATURES;
+        }
+        if (data.config_data.ultrasoundConfig && !data.config_data.ultrasoundConfig.complexityLevel) {
+          data.config_data.ultrasoundConfig.complexityLevel = "intermediario";
         }
         setLab(data);
       }
@@ -158,8 +168,8 @@ export default function VirtualLabEditor() {
       showFocus: ultrasoundConfig.controls.showFocus,
       showTGC: false,
       showDynamicRange: false,
-      showTransducerSelector: false,
-      showModeSelector: false,
+      showTransducerSelector: true,
+      showModeSelector: ultrasoundConfig.simulationFeatures?.enableColorDoppler ?? true,
       presetAnatomy: (currentPreset.tissueProfile || "muscle") as any,
       lockGain: false,
       lockDepth: false,
@@ -172,12 +182,16 @@ export default function VirtualLabEditor() {
         ? currentPreset.transducerType 
         : "linear" as const,
       initialMode: "b-mode" as const,
+      simulationFeatures: ultrasoundConfig.simulationFeatures,
+      complexityLevel: ultrasoundConfig.complexityLevel,
     };
   }, [
     ultrasoundConfig?.controls.showGain,
     ultrasoundConfig?.controls.showDepth,
     ultrasoundConfig?.controls.showFrequency,
     ultrasoundConfig?.controls.showFocus,
+    ultrasoundConfig?.simulationFeatures,
+    ultrasoundConfig?.complexityLevel,
     currentPreset?.tissueProfile,
     currentPreset?.recommendedGain,
     currentPreset?.recommendedDepthCm,
@@ -345,6 +359,251 @@ export default function VirtualLabEditor() {
                   },
                 })}
               />
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Recursos da Simulação</CardTitle>
+                  <CardDescription>
+                    Configure quais elementos físicos e didáticos serão exibidos na simulação
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Complexity Level Selector */}
+                  <div>
+                    <Label>Nível de Complexidade (Pré-configuração)</Label>
+                    <Select
+                      value={ultrasoundConfig.complexityLevel || "intermediario"}
+                      onValueChange={(value: ComplexityLevel) => {
+                        const features = getFeaturesByComplexity(value);
+                        setLab({
+                          ...lab,
+                          config_data: {
+                            ...lab.config_data,
+                            ultrasoundConfig: {
+                              ...ultrasoundConfig,
+                              complexityLevel: value,
+                              simulationFeatures: features,
+                            },
+                          },
+                        });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="basico">Básico</SelectItem>
+                        <SelectItem value="intermediario">Intermediário</SelectItem>
+                        <SelectItem value="avancado">Avançado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Pré-configura os recursos abaixo. Você pode personalizá-los após selecionar.
+                    </p>
+                  </div>
+
+                  <Separator />
+
+                  {/* Core Imaging */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Imagem Estrutural</h4>
+                    {[
+                      { key: "showStructuralBMode", label: "Exibir imagem estrutural (Modo B)" },
+                      { key: "showBeamOverlay", label: "Mostrar feixe de ultrassom (overlay)" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between pl-2">
+                        <Label htmlFor={key} className="text-sm font-normal">{label}</Label>
+                        <Switch
+                          id={key}
+                          checked={ultrasoundConfig.simulationFeatures?.[key as keyof typeof ultrasoundConfig.simulationFeatures] ?? true}
+                          onCheckedChange={(checked) =>
+                            setLab({
+                              ...lab,
+                              config_data: {
+                                ...lab.config_data,
+                                ultrasoundConfig: {
+                                  ...ultrasoundConfig,
+                                  simulationFeatures: {
+                                    ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                    [key]: checked,
+                                  },
+                                },
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Physical Markers */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Marcadores Físicos</h4>
+                    {[
+                      { key: "showDepthScale", label: "Escala de profundidade (cm)" },
+                      { key: "showFocusMarker", label: "Marcador de foco" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between pl-2">
+                        <Label htmlFor={key} className="text-sm font-normal">{label}</Label>
+                        <Switch
+                          id={key}
+                          checked={ultrasoundConfig.simulationFeatures?.[key as keyof typeof ultrasoundConfig.simulationFeatures] ?? true}
+                          onCheckedChange={(checked) =>
+                            setLab({
+                              ...lab,
+                              config_data: {
+                                ...lab.config_data,
+                                ultrasoundConfig: {
+                                  ...ultrasoundConfig,
+                                  simulationFeatures: {
+                                    ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                    [key]: checked,
+                                  },
+                                },
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Physics Panel */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Painel de Física</h4>
+                    <div className="flex items-center justify-between pl-2">
+                      <Label htmlFor="showPhysicsPanel" className="text-sm font-normal">
+                        Exibir painel de cálculos (Potência, Energia, Dose)
+                      </Label>
+                      <Switch
+                        id="showPhysicsPanel"
+                        checked={ultrasoundConfig.simulationFeatures?.showPhysicsPanel ?? true}
+                        onCheckedChange={(checked) =>
+                          setLab({
+                            ...lab,
+                            config_data: {
+                              ...lab.config_data,
+                              ultrasoundConfig: {
+                                ...ultrasoundConfig,
+                                simulationFeatures: {
+                                  ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                  showPhysicsPanel: checked,
+                                },
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Artifacts */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Artefatos de Imagem</h4>
+                    {[
+                      { key: "enablePosteriorEnhancement", label: "Reforço posterior acústico" },
+                      { key: "enableAcousticShadow", label: "Sombra acústica (ossos, calcificações)" },
+                      { key: "enableReverberation", label: "Reverberações" },
+                      { key: "enableNearFieldClutter", label: "Ruído de campo próximo" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between pl-2">
+                        <Label htmlFor={key} className="text-sm font-normal">{label}</Label>
+                        <Switch
+                          id={key}
+                          checked={ultrasoundConfig.simulationFeatures?.[key as keyof typeof ultrasoundConfig.simulationFeatures] ?? false}
+                          onCheckedChange={(checked) =>
+                            setLab({
+                              ...lab,
+                              config_data: {
+                                ...lab.config_data,
+                                ultrasoundConfig: {
+                                  ...ultrasoundConfig,
+                                  simulationFeatures: {
+                                    ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                    [key]: checked,
+                                  },
+                                },
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Didactic Overlays */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Overlays Didáticos</h4>
+                    {[
+                      { key: "showFieldLines", label: "Linhas de propagação do campo acústico" },
+                      { key: "showAttenuationMap", label: "Mapa de atenuação" },
+                      { key: "showAnatomyLabels", label: "Rótulos anatômicos" },
+                    ].map(({ key, label }) => (
+                      <div key={key} className="flex items-center justify-between pl-2">
+                        <Label htmlFor={key} className="text-sm font-normal">{label}</Label>
+                        <Switch
+                          id={key}
+                          checked={ultrasoundConfig.simulationFeatures?.[key as keyof typeof ultrasoundConfig.simulationFeatures] ?? false}
+                          onCheckedChange={(checked) =>
+                            setLab({
+                              ...lab,
+                              config_data: {
+                                ...lab.config_data,
+                                ultrasoundConfig: {
+                                  ...ultrasoundConfig,
+                                  simulationFeatures: {
+                                    ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                    [key]: checked,
+                                  },
+                                },
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Color Doppler */}
+                  <div className="space-y-3">
+                    <h4 className="text-sm font-semibold">Doppler Color</h4>
+                    <div className="flex items-center justify-between pl-2">
+                      <Label htmlFor="enableColorDoppler" className="text-sm font-normal">
+                        Ativar Doppler color (quando houver vasos)
+                      </Label>
+                      <Switch
+                        id="enableColorDoppler"
+                        checked={ultrasoundConfig.simulationFeatures?.enableColorDoppler ?? true}
+                        onCheckedChange={(checked) =>
+                          setLab({
+                            ...lab,
+                            config_data: {
+                              ...lab.config_data,
+                              ultrasoundConfig: {
+                                ...ultrasoundConfig,
+                                simulationFeatures: {
+                                  ...(ultrasoundConfig.simulationFeatures || DEFAULT_SIMULATION_FEATURES),
+                                  enableColorDoppler: checked,
+                                },
+                              },
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               <Card>
                 <CardHeader>

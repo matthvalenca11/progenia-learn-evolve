@@ -14,6 +14,43 @@ export type AnatomyPreset =
   | 'generic';
 
 /**
+ * Simulation features configuration
+ */
+export type UltrasoundSimulationFeatures = {
+  // Core imaging
+  showStructuralBMode: boolean;
+  showBeamOverlay: boolean;
+  
+  // Physical markers
+  showDepthScale: boolean;
+  showFocusMarker: boolean;
+  
+  // Physics panel
+  showPhysicsPanel: boolean;
+  
+  // Artifacts
+  enablePosteriorEnhancement: boolean;
+  enableAcousticShadow: boolean;
+  enableReverberation: boolean;
+  enableNearFieldClutter: boolean;
+  
+  // Didactic overlays
+  showFieldLines: boolean;
+  showAttenuationMap: boolean;
+  
+  // Color Doppler
+  enableColorDoppler: boolean;
+  
+  // Anatomy labels
+  showAnatomyLabels: boolean;
+};
+
+/**
+ * Complexity level presets
+ */
+export type ComplexityLevel = 'basico' | 'intermediario' | 'avancado';
+
+/**
  * Extended configuration for advanced ultrasound lab
  */
 export type UltrasoundLabConfigAdvanced = {
@@ -44,6 +81,85 @@ export type UltrasoundLabConfigAdvanced = {
   initialFrequency?: number;
   initialTransducer?: TransducerType;
   initialMode?: ImagingMode;
+  
+  // Simulation features
+  simulationFeatures?: UltrasoundSimulationFeatures;
+  complexityLevel?: ComplexityLevel;
+};
+
+/**
+ * Default simulation features (all enabled)
+ */
+export const DEFAULT_SIMULATION_FEATURES: UltrasoundSimulationFeatures = {
+  showStructuralBMode: true,
+  showBeamOverlay: false,
+  showDepthScale: true,
+  showFocusMarker: true,
+  showPhysicsPanel: true,
+  enablePosteriorEnhancement: true,
+  enableAcousticShadow: true,
+  enableReverberation: false,
+  enableNearFieldClutter: false,
+  showFieldLines: false,
+  showAttenuationMap: false,
+  enableColorDoppler: true,
+  showAnatomyLabels: false,
+};
+
+/**
+ * Get preset features by complexity level
+ */
+export const getFeaturesByComplexity = (level: ComplexityLevel): UltrasoundSimulationFeatures => {
+  switch (level) {
+    case 'basico':
+      return {
+        showStructuralBMode: true,
+        showBeamOverlay: false,
+        showDepthScale: true,
+        showFocusMarker: false,
+        showPhysicsPanel: false,
+        enablePosteriorEnhancement: false,
+        enableAcousticShadow: false,
+        enableReverberation: false,
+        enableNearFieldClutter: false,
+        showFieldLines: false,
+        showAttenuationMap: false,
+        enableColorDoppler: false,
+        showAnatomyLabels: false,
+      };
+    case 'intermediario':
+      return {
+        showStructuralBMode: true,
+        showBeamOverlay: false,
+        showDepthScale: true,
+        showFocusMarker: true,
+        showPhysicsPanel: true,
+        enablePosteriorEnhancement: true,
+        enableAcousticShadow: true,
+        enableReverberation: false,
+        enableNearFieldClutter: false,
+        showFieldLines: false,
+        showAttenuationMap: false,
+        enableColorDoppler: false,
+        showAnatomyLabels: false,
+      };
+    case 'avancado':
+      return {
+        showStructuralBMode: true,
+        showBeamOverlay: true,
+        showDepthScale: true,
+        showFocusMarker: true,
+        showPhysicsPanel: true,
+        enablePosteriorEnhancement: true,
+        enableAcousticShadow: true,
+        enableReverberation: true,
+        enableNearFieldClutter: true,
+        showFieldLines: true,
+        showAttenuationMap: false,
+        enableColorDoppler: true,
+        showAnatomyLabels: true,
+      };
+  }
 };
 
 /**
@@ -65,6 +181,8 @@ export const DEFAULT_ULTRASOUND_CONFIG_ADVANCED: UltrasoundLabConfigAdvanced = {
   initialFrequency: 7.5,
   initialTransducer: 'linear',
   initialMode: 'b-mode',
+  simulationFeatures: DEFAULT_SIMULATION_FEATURES,
+  complexityLevel: 'intermediario',
 };
 
 /**

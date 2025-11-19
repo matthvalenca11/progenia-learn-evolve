@@ -47,7 +47,11 @@ export const UltrasoundSimulatorAdvanced = ({
     initialFrequency = 7.5,
     initialTransducer = 'linear',
     initialMode = 'b-mode',
+    simulationFeatures,
   } = config;
+
+  // Simulation features with defaults
+  const features = simulationFeatures || DEFAULT_ULTRASOUND_CONFIG_ADVANCED.simulationFeatures!;
 
   // State management
   const [gainPercent, setGainPercent] = useState(initialGain);
@@ -88,6 +92,10 @@ export const UltrasoundSimulatorAdvanced = ({
   const effectiveFreq = showFrequency ? physicalParams.frequencyMHz : initialFrequency;
   const effectiveFocus = showFocus ? physicalParams.focusCm : effectiveDepth / 2;
   const effectiveTransducer = showTransducerSelector ? selectedTransducer : initialTransducer;
+  
+  // Get transducer display name
+  const effectiveTransducerSpec = transducerSpecs[effectiveTransducer];
+  const transducerDisplayName = effectiveTransducer.toUpperCase();
 
   // Use advanced engine
   useUltrasoundEngineAdvanced(
@@ -165,7 +173,7 @@ export const UltrasoundSimulatorAdvanced = ({
                 <div className="w-24 h-8 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 rounded-b-3xl shadow-2xl flex items-center justify-center border-2 border-slate-600 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-black/20 rounded-b-3xl" />
                   <span className="text-[9px] font-bold text-slate-800 z-10 tracking-wider uppercase">
-                    {currentTransducer.type}
+                    {transducerDisplayName}
                   </span>
                 </div>
               </div>
@@ -181,26 +189,28 @@ export const UltrasoundSimulatorAdvanced = ({
                 />
 
                 {/* Depth Scale */}
-                <div className="absolute right-2 top-0 bottom-0 flex flex-col justify-between py-3 z-10 pointer-events-none">
-                  <div className="absolute right-8 top-0 bottom-0 w-px bg-cyan-500/30" />
-                  {Array.from({ length: 11 }).map((_, i) => {
-                    const d = (effectiveDepth / 10) * i;
-                    const isMajor = i % 2 === 0;
-                    return (
-                      <div key={i} className="flex items-center gap-1 relative">
-                        <div className={`${isMajor ? 'w-3 bg-cyan-400' : 'w-2 bg-cyan-500/50'} h-px`} />
-                        {isMajor && (
-                          <span className="text-[9px] text-cyan-300 font-mono font-semibold tabular-nums">
-                            {d.toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                {features.showDepthScale && (
+                  <div className="absolute right-2 top-0 bottom-0 flex flex-col justify-between py-3 z-10 pointer-events-none">
+                    <div className="absolute right-8 top-0 bottom-0 w-px bg-cyan-500/30" />
+                    {Array.from({ length: 11 }).map((_, i) => {
+                      const d = (effectiveDepth / 10) * i;
+                      const isMajor = i % 2 === 0;
+                      return (
+                        <div key={i} className="flex items-center gap-1 relative">
+                          <div className={`${isMajor ? 'w-3 bg-cyan-400' : 'w-2 bg-cyan-500/50'} h-px`} />
+                          {isMajor && (
+                            <span className="text-[9px] text-cyan-300 font-mono font-semibold tabular-nums">
+                              {d.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Focus Indicator */}
-                {showFocus && (
+                {showFocus && features.showFocusMarker && (
                   <div
                     className="absolute right-1 z-20 transition-all duration-300 pointer-events-none"
                     style={{ top: `${(effectiveFocus / effectiveDepth) * 100}%` }}
