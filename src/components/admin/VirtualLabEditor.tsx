@@ -186,12 +186,17 @@ export default function VirtualLabEditor() {
       complexityLevel: ultrasoundConfig.complexityLevel,
     };
   }, [
+    // CRITICAL: Include presetId to trigger update when preset changes
+    ultrasoundConfig?.presetId,
     ultrasoundConfig?.controls.showGain,
     ultrasoundConfig?.controls.showDepth,
     ultrasoundConfig?.controls.showFrequency,
     ultrasoundConfig?.controls.showFocus,
     ultrasoundConfig?.simulationFeatures,
     ultrasoundConfig?.complexityLevel,
+    ultrasoundConfig?.layers,
+    ultrasoundConfig?.inclusions,
+    currentPreset?.id,
     currentPreset?.tissueProfile,
     currentPreset?.recommendedGain,
     currentPreset?.recommendedDepthCm,
@@ -656,7 +661,11 @@ export default function VirtualLabEditor() {
             <CardContent>
               {lab.lab_type === "ultrasound" && simulatorConfig ? (
                 <div className="rounded-lg overflow-hidden bg-black">
-                  <UltrasoundSimulatorAdvanced config={simulatorConfig} />
+                  {/* Force re-mount when preset changes by using key */}
+                  <UltrasoundSimulatorAdvanced 
+                    key={ultrasoundConfig?.presetId || 'default'} 
+                    config={simulatorConfig} 
+                  />
                 </div>
               ) : (
                 <div className="text-center py-12 text-muted-foreground">
