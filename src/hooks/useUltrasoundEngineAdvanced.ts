@@ -117,27 +117,36 @@ function generateAdvancedUltrasoundFrame(
       const lateralRatio = (x - width / 2) / width;
       const depthCm = depthRatio * maxDepthCm;
 
-      // Beam geometry
+      // Beam geometry - respecting transducer type
       let beamIntensity = 1.0;
       
-      if (geometryType === 'sector' || geometryType === 'trapezoid') {
-        // Fan/sector scan
-        const maxAngle = (beamAngle || 70) / 2;
-        const angleAtDepth = lateralRatio * maxAngle;
-        const beamWidth = geometryType === 'sector' ? 0.15 : 0.20 + depthRatio * 0.25;
+      if (geometryType === 'sector') {
+        // Phased array - true sector scan (narrow origin, wide field)
+        const maxAngle = (beamAngle || 90) / 2; // degrees
+        const angleRad = (lateralRatio * maxAngle * Math.PI) / 180;
+        const distFromAxis = Math.abs(Math.tan(angleRad) * depthRatio);
+        const beamWidth = 0.15 + depthRatio * 0.35; // Widens significantly with depth
+        
+        if (distFromAxis > beamWidth) {
+          const overshoot = (distFromAxis - beamWidth) / 0.10;
+          beamIntensity = Math.max(0, 1 - overshoot * overshoot);
+        }
+      } else if (geometryType === 'trapezoid') {
+        // Convex/curved array - trapezoidal field
+        const beamWidth = 0.20 + depthRatio * 0.28; // Moderate widening
         const distFromCenter = Math.abs(lateralRatio);
         
         if (distFromCenter > beamWidth) {
-          const overshoot = (distFromCenter - beamWidth) / 0.08;
+          const overshoot = (distFromCenter - beamWidth) / 0.10;
           beamIntensity = Math.max(0, 1 - overshoot * overshoot);
         }
       } else {
-        // Linear scan
-        const beamCenterWidth = 0.18 + depthRatio * 0.15;
+        // Linear scan - rectangular field with PARALLEL edges
+        const beamCenterWidth = 0.35; // Fixed width, NO widening with depth
         const distFromCenter = Math.abs(lateralRatio);
         
         if (distFromCenter > beamCenterWidth) {
-          const overshoot = (distFromCenter - beamCenterWidth) / 0.12;
+          const overshoot = (distFromCenter - beamCenterWidth) / 0.08;
           beamIntensity = Math.max(0, 1 - overshoot);
         }
       }
