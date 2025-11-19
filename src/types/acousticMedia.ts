@@ -14,6 +14,7 @@ export type AcousticMediumId =
   | "skin"
   | "blood"
   | "cyst_fluid"
+  | "fascia"
   | "generic_soft";
 
 export type Echogenicity = "hyperechoic" | "isoechoic" | "hypoechoic" | "anechoic";

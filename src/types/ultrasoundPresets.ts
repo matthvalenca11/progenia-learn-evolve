@@ -4,6 +4,11 @@
  */
 
 export type UltrasoundAnatomyPresetId =
+  | "msk_tendon_upper_limb"
+  | "muscle_generic"
+  | "abdominal_superficial"
+  | "vascular_superficial"
+  | "tissue_with_inclusions"
   | "shoulder_supraspinatus_long"
   | "shoulder_biceps_long"
   | "carotid_long"
