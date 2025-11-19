@@ -8,9 +8,11 @@ export type UltrasoundAnatomyPresetId =
   | "shoulder_supraspinatus_long"
   | "carotid_long"
   | "carotid_trans"
-  | "muscle_generic";
+  | "muscle_generic"
+  | "liver_standard"
+  | "gallbladder_standard";
 
-export type TissueProfile = "muscle" | "tendon" | "vascular" | "bone_surface" | "liver_like";
+export type TissueProfile = "muscle" | "tendon" | "vascular" | "bone_surface" | "liver_like" | "abdominal";
 
 export type UltrasoundAnatomyPreset = {
   id: UltrasoundAnatomyPresetId;
