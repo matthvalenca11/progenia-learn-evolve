@@ -120,6 +120,8 @@ export default function VirtualLabEditor() {
   const handlePresetChange = useCallback((presetId: string) => {
     if (!ultrasoundConfig) return;
     
+    const newPreset = allPresets.find(p => p.id === presetId);
+    
     setLab({
       ...lab,
       config_data: {
@@ -133,10 +135,16 @@ export default function VirtualLabEditor() {
       },
     });
     
-    toast.info("Preset alterado", { 
-      description: "Camadas e inclusões foram redefinidas para o novo preset" 
-    });
-  }, [lab, ultrasoundConfig]);
+    if (newPreset) {
+      toast.info("Preset alterado", { 
+        description: `Camadas redefinidas. Transdutor recomendado: ${
+          newPreset.transducerType === 'linear' ? 'Linear' : 
+          newPreset.transducerType === 'convex' ? 'Convexo' : 
+          'Microconvexo'
+        } (${newPreset.recommendedFrequencyMHz} MHz)` 
+      });
+    }
+  }, [lab, ultrasoundConfig, allPresets]);
 
   // Memoize simulator config to prevent unnecessary re-renders
   const simulatorConfig = useMemo(() => {
