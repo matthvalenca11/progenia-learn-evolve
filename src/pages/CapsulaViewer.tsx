@@ -195,7 +195,7 @@ export default function CapsulaViewer() {
       case "mri_viewer":
         return <MRIViewer config={defaultConfig} />;
       case "ultrasound_simulator":
-        return <UltrasoundSimulator config={defaultConfig} />;
+        return <UltrasoundSimulator config={capsula.ultrasound_lab_config} />;
       case "eletroterapia_lab":
         return <EletroterapiaLab config={defaultConfig} />;
       case "thermal_lab":

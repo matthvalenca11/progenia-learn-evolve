@@ -29,6 +29,7 @@ export interface Capsula {
   visual_path?: string;
   capa_path?: string;
   tipo_lab?: "mri_viewer" | "ultrasound_simulator" | "eletroterapia_lab" | "thermal_lab";
+  ultrasound_lab_config?: any; // JSON field from Supabase
   ativo: boolean;
   ordem: number;
   created_at?: string;

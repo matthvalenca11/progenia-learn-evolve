@@ -1,68 +1,43 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
+import { useUltrasoundImageEngine } from "@/hooks/useUltrasoundImageEngine";
+import { UltrasoundLabConfig, DEFAULT_ULTRASOUND_CONFIG } from "@/types/ultrasound";
 
 interface UltrasoundSimulatorProps {
-  config?: {
-    title?: string;
-    description?: string;
-  };
+  config?: UltrasoundLabConfig;
+  title?: string;
+  description?: string;
 }
 
-type DepthSample = {
-  zCm: number;
-  relIntensity: number; // 0–1 normalizado
-};
+export const UltrasoundSimulator = ({
+  config = DEFAULT_ULTRASOUND_CONFIG,
+  title,
+  description,
+}: UltrasoundSimulatorProps) => {
+  // Use config or defaults
+  const { showGain, showDepth, showFrequency, showFocus } = config;
 
-function computeUltrasoundDepthProfile(
-  fMHz: number,
-  focusCm: number,
-  maxDepthCm: number = 6,
-  stepCm: number = 0.5
-): DepthSample[] {
-  const lambdaCm = 154000 / (fMHz * 1e6); // 1540 m/s = 154000 cm/s
-  const apertureCm = 3;
-  const nearFieldCm = (apertureCm * apertureCm) / (4 * lambdaCm);
+  // Slider states (0-100 for UI)
+  const [gainPercent, setGainPercent] = useState(50);
+  const [depthPercent, setDepthPercent] = useState(50);
+  const [freqPercent, setFreqPercent] = useState(40);
+  const [focusPercent, setFocusPercent] = useState(40);
 
-  const alpha_dB_per_cm = 0.5 * fMHz;
+  // Canvas ref
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [canvasSize, setCanvasSize] = useState({ width: 640, height: 480 });
 
-  const samples: DepthSample[] = [];
-  const sigmaCm = nearFieldCm / 3;
-
-  for (let z = 0; z <= maxDepthCm + 1e-6; z += stepCm) {
-    const att_dB = alpha_dB_per_cm * z;
-    const attFactor = Math.pow(10, -att_dB / 10);
-
-    const focusShape = Math.exp(-Math.pow(z - focusCm, 2) / (2 * sigmaCm * sigmaCm));
-
-    const rawIntensity = attFactor * focusShape;
-    samples.push({ zCm: parseFloat(z.toFixed(2)), relIntensity: rawIntensity });
-  }
-
-  // normalizar
-  const maxVal = Math.max(...samples.map((s) => s.relIntensity), 1e-6);
-  return samples.map((s) => ({
-    ...s,
-    relIntensity: s.relIntensity / maxVal,
-  }));
-}
-
-export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
-  // Sliders (keeping original names but mapping to physical model)
-  const [gainPercent, setGainPercent] = useState(50); // 0-100 (Ganho/Brilho)
-  const [focusPercent, setFocusPercent] = useState(50); // 0-100 (Profundidade/Foco)
-  const [freqPercent, setFreqPercent] = useState(33); // 0-100 (Frequência)
-
-  // Physical model calculations
-  const results = useMemo(() => {
+  // Map slider values to physical parameters
+  const physicalParams = useMemo(() => {
     const intensity = 0.1 + (gainPercent / 100) * 2.4; // 0.1-2.5 W/cm²
-    const targetDepthCm = 1 + (focusPercent / 100) * 4; // 1-5 cm
-    const frequencyMHz = 1 + (freqPercent / 100) * 2; // 1-3 MHz
+    const depthCm = 2 + (depthPercent / 100) * 8; // 2-10 cm
+    const frequencyMHz = 2 + (freqPercent / 100) * 13; // 2-15 MHz
+    const focusCm = 1 + (focusPercent / 100) * (depthCm - 1); // 1 to depth
 
-    const eraCm2 = 5; // default ERA
-    const timeSec = 300; // 5 min reference session
-
+    const eraCm2 = 5;
+    const timeSec = 300; // 5 min reference
     const powerW = intensity * eraCm2;
     const energyJ = powerW * timeSec;
     const doseJPerCm2 = intensity * timeSec;
@@ -73,247 +48,279 @@ export const UltrasoundSimulator = ({ config }: UltrasoundSimulatorProps) => {
 
     return {
       intensity,
-      targetDepthCm,
+      depthCm,
       frequencyMHz,
+      focusCm,
       powerW,
       energyJ,
       doseJPerCm2,
       doseLabel,
     };
-  }, [gainPercent, focusPercent, freqPercent]);
+  }, [gainPercent, depthPercent, freqPercent, focusPercent]);
 
-  // Compute depth profile using realistic physics
-  const depthProfile = useMemo(
-    () => computeUltrasoundDepthProfile(results.frequencyMHz, results.targetDepthCm, 6, 0.5),
-    [results.frequencyMHz, results.targetDepthCm]
+  // Use defaults if control is hidden
+  const effectiveGain = showGain ? gainPercent : 50;
+  const effectiveDepth = showDepth ? physicalParams.depthCm : 6;
+  const effectiveFreq = showFrequency ? physicalParams.frequencyMHz : 7.5;
+  const effectiveFocus = showFocus ? physicalParams.focusCm : effectiveDepth / 2;
+
+  // Render ultrasound image
+  useUltrasoundImageEngine(
+    canvasRef,
+    {
+      gain: effectiveGain,
+      depth: effectiveDepth,
+      frequency: effectiveFreq,
+      focus: effectiveFocus,
+      width: canvasSize.width,
+      height: canvasSize.height,
+      time: 0,
+    },
+    true
   );
 
-  // Visual factors
-  const intensityFactor = gainPercent / 100;
-  const waveDuration = 3 - results.frequencyMHz * 0.5; // faster for higher freq
+  // Resize canvas to fit container
+  useEffect(() => {
+    const handleResize = () => {
+      if (canvasRef.current?.parentElement) {
+        const rect = canvasRef.current.parentElement.getBoundingClientRect();
+        setCanvasSize({
+          width: Math.floor(rect.width),
+          height: Math.floor(rect.height),
+        });
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Beam animation params
+  const beamWidth = 30 + (1 - freqPercent / 100) * 40;
+  const waveDuration = 2.5 - (freqPercent / 100) * 1;
 
   return (
     <div className="space-y-6">
+      {/* Title */}
       <div className="text-center">
         <h3 className="text-2xl font-bold mb-2">
-          {config?.title || "Simulador de Parâmetros de Ultrassom"}
+          {title || "Simulador de Parâmetros de Ultrassom"}
         </h3>
-        {config?.description && (
-          <p className="text-muted-foreground">{config.description}</p>
-        )}
+        {description && <p className="text-sm text-muted-foreground">{description}</p>}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* Synthetic Visualization */}
-        <Card className="md:col-span-2 p-6">
-          <div className="aspect-video bg-slate-900 rounded-lg overflow-hidden relative">
-            {/* Probe */}
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-24 h-8 rounded-xl bg-slate-100 shadow-lg flex items-center justify-center text-[10px] text-slate-700 font-medium z-10">
-              Probe
-            </div>
-
-            {/* Tissue layers */}
-            <div className="absolute inset-x-0 top-6 bottom-0">
-              <div className="h-[20%] bg-amber-200/70 border-b border-amber-300/60 flex items-center px-3 text-[10px] text-slate-900 font-medium">
-                Pele
+      <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
+        {/* LEFT: Ultrasound Console View */}
+        <div className="space-y-4">
+          {/* Main ultrasound screen */}
+          <Card className="bg-slate-950 border-slate-800 p-4">
+            <div className="relative bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700">
+              {/* Probe head */}
+              <div
+                className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
+                style={{ width: "120px" }}
+              >
+                <div className="w-3 h-3 bg-slate-300 rounded-full" />
+                <div className="w-20 h-6 bg-gradient-to-b from-slate-200 to-slate-300 rounded-b-2xl shadow-lg flex items-center justify-center text-[9px] font-semibold text-slate-800">
+                  PROBE
+                </div>
               </div>
-              <div className="h-[20%] bg-yellow-100/70 border-b border-yellow-200/70 flex items-center px-3 text-[10px] text-slate-900 font-medium">
-                Tecido subcutâneo
-              </div>
-              <div className="h-[60%] bg-emerald-900/70 relative flex items-center px-3 text-[10px] text-emerald-100 font-medium">
-                Músculo
-                
-                {/* 2D Heatmap inside muscle */}
-                <div className="absolute inset-x-3 inset-y-3 grid grid-rows-5 grid-cols-8 gap-[2px]">
-                  {Array.from({ length: 5 }).map((_, rowIdx) => {
-                    const maxDepthCm = 6;
-                    const rowDepthStep = maxDepthCm / 5;
-                    const depthCenter = (rowIdx + 0.5) * rowDepthStep;
-                    
-                    const sample = depthProfile.reduce((prev, curr) =>
-                      Math.abs(curr.zCm - depthCenter) < Math.abs(prev.zCm - depthCenter)
-                        ? curr
-                        : prev
-                    ) || { relIntensity: 0 };
 
-                    return Array.from({ length: 8 }).map((_, colIdx) => {
-                      const i = sample.relIntensity;
-                      const r = Math.round(50 + 205 * i);
-                      const g = Math.round(80 + 150 * i);
-                      const b = Math.round(120 + 30 * (1 - i));
+              {/* Scan field container with animated beams overlay */}
+              <div className="relative w-full" style={{ aspectRatio: "4/3" }}>
+                {/* Canvas for ultrasound image */}
+                <canvas
+                  ref={canvasRef}
+                  width={canvasSize.width}
+                  height={canvasSize.height}
+                  className="absolute inset-0 w-full h-full"
+                  style={{ imageRendering: "pixelated" }}
+                />
 
-                      return (
-                        <div
-                          key={`${rowIdx}-${colIdx}`}
-                          className="rounded-[2px] transition-all duration-300"
-                          style={{
-                            backgroundColor: `rgba(${r},${g},${b},${0.2 + 0.6 * i * intensityFactor})`,
-                          }}
-                        />
-                      );
-                    });
+                {/* Animated beam overlays */}
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="absolute left-1/2 -translate-x-1/2 top-0 pointer-events-none rounded-b-full opacity-0"
+                    style={{
+                      width: `${beamWidth + i * 30}%`,
+                      height: "140%",
+                      border: "1.5px solid rgba(56, 189, 248, 0.25)",
+                      boxShadow: `0 0 ${10 + i * 5}px rgba(56, 189, 248, 0.4)`,
+                      animation: `ultraWave ${waveDuration}s ease-in-out infinite`,
+                      animationDelay: `${i * (waveDuration / 3)}s`,
+                    }}
+                  />
+                ))}
+
+                {/* Focus indicator line (if focus control is shown) */}
+                {showFocus && (
+                  <div
+                    className="absolute right-2 w-4 h-0.5 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50 transition-all duration-300"
+                    style={{
+                      top: `${(effectiveFocus / effectiveDepth) * 100}%`,
+                    }}
+                  >
+                    <div className="absolute -right-1 -top-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
+                  </div>
+                )}
+
+                {/* Depth scale on right edge */}
+                <div className="absolute right-1 top-0 bottom-0 flex flex-col justify-between text-[9px] text-slate-400 py-2">
+                  {Array.from({ length: 6 }).map((_, i) => {
+                    const d = (effectiveDepth / 5) * i;
+                    return (
+                      <div key={i} className="flex items-center gap-1">
+                        <div className="w-2 h-px bg-slate-600" />
+                        <span>{d.toFixed(1)}</span>
+                      </div>
+                    );
                   })}
                 </div>
               </div>
+
+              {/* Status bar at bottom */}
+              <div className="mt-2 px-3 py-2 bg-slate-900/80 rounded flex items-center justify-between text-[10px] text-slate-300 border-t border-slate-700/50">
+                <span>Profundidade: {effectiveDepth.toFixed(1)} cm</span>
+                <span>Freq: {effectiveFreq.toFixed(1)} MHz</span>
+                <span>Ganho: {((effectiveGain - 50) * 0.6).toFixed(0)} dB</span>
+              </div>
             </div>
-
-            {/* Ultrasound waves */}
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="absolute left-1/2 -translate-x-1/2 w-[70%] h-[120%] border-[2px] rounded-b-full pointer-events-none"
-                style={{
-                  borderColor: `rgba(56, 189, 248, ${0.15 + 0.5 * intensityFactor})`,
-                  boxShadow: `0 0 ${8 + 20 * intensityFactor}px rgba(56, 189, 248, 0.6)`,
-                  animation: `ultrasoundWave ${waveDuration}s linear infinite`,
-                  animationDelay: `${(waveDuration / 3) * i}s`,
-                }}
-              />
-            ))}
-
-            {/* Treatment region glow (moves with focus) */}
-            <div
-              className="absolute inset-x-8 rounded-3xl bg-cyan-400/15 blur-3xl transition-all duration-500"
-              style={{
-                top: `${10 + (results.targetDepthCm / 6) * 50}%`,
-                height: "20%",
-                opacity: 0.3 + intensityFactor * 0.7,
-                boxShadow: `0 0 ${15 + 35 * intensityFactor}px rgba(34, 211, 238, 0.8)`,
-              }}
-            />
-          </div>
-
-          {/* Dose calculations panel */}
-          <Card className="mt-4 p-3 bg-muted/70">
-            <p className="text-xs">
-              <span className="font-semibold">Potência estimada:</span> {results.powerW.toFixed(2)} W
-            </p>
-            <p className="text-xs">
-              <span className="font-semibold">Energia total (sessão 5 min):</span> {results.energyJ.toFixed(1)} J
-            </p>
-            <p className="text-xs">
-              <span className="font-semibold">Dose aproximada:</span> {results.doseJPerCm2.toFixed(1)} J/cm²
-            </p>
-            <p className="text-xs">
-              <span className="font-semibold">Classificação:</span> {results.doseLabel}
-            </p>
           </Card>
-        </Card>
 
-        {/* Controls Panel */}
-        <Card className="p-6">
-          <h4 className="font-semibold mb-4">Controles do Transdutor</h4>
-
-          <div className="space-y-6">
-            <div>
-              <Label>Ganho / Brilho</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Controla a intensidade do sinal
-              </p>
-              <Slider
-                value={[gainPercent]}
-                onValueChange={(value) => setGainPercent(value[0])}
-                min={0}
-                max={100}
-                step={5}
-              />
-              <p className="text-sm text-right mt-1">{results.intensity.toFixed(2)} W/cm²</p>
-            </div>
-
-            <div>
-              <Label>Profundidade / Foco</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Ajusta a profundidade de penetração
-              </p>
-              <Slider
-                value={[focusPercent]}
-                onValueChange={(value) => setFocusPercent(value[0])}
-                min={0}
-                max={100}
-                step={5}
-              />
-              <p className="text-sm text-right mt-1">{results.targetDepthCm.toFixed(1)} cm</p>
-            </div>
-
-            <div>
-              <Label>Frequência (MHz)</Label>
-              <p className="text-xs text-muted-foreground mb-2">
-                Afeta resolução e penetração
-              </p>
-              <Slider
-                value={[freqPercent]}
-                onValueChange={(value) => setFreqPercent(value[0])}
-                min={0}
-                max={100}
-                step={5}
-              />
-              <p className="text-sm text-right mt-1">{results.frequencyMHz.toFixed(1)} MHz</p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Depth bars - realistic physics-based profile */}
-      <Card className="p-6">
-        <h4 className="font-semibold mb-3">Perfil de intensidade por profundidade (modelo físico)</h4>
-        <div className="flex items-end justify-center gap-2 h-32">
-          {depthProfile.filter((_, idx) => idx % 2 === 0).map((sample) => {
-            const i = sample.relIntensity;
-            const height = 20 + i * 80;
-            const isFocused = Math.abs(sample.zCm - results.targetDepthCm) < 0.6;
-            
-            const r = Math.round(50 + 205 * i);
-            const g = Math.round(80 + 150 * i);
-            const b = Math.round(120 + 30 * (1 - i));
-
-            return (
-              <div key={sample.zCm} className="flex flex-col items-center justify-end gap-1">
-                <div
-                  className="w-4 rounded-t-md transition-all duration-300"
-                  style={{
-                    height: `${height}px`,
-                    background: `linear-gradient(to top, rgb(${r},${g},${b}), rgba(${r},${g},${b},0.7))`,
-                    opacity: 0.3 + 0.7 * i,
-                    border: isFocused ? "2px solid rgba(34, 211, 238, 1)" : "none",
-                    boxShadow: i > 0.85 ? `0 0 10px rgba(${r},${g},${b},0.8)` : "none",
-                  }}
-                />
-                <span className="text-[10px] text-muted-foreground font-medium">
-                  {sample.zCm.toFixed(1)}
+          {/* Results panel */}
+          <Card className="p-4 bg-slate-50 dark:bg-slate-900">
+            <h4 className="text-sm font-semibold mb-3">Cálculos Estimados</h4>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <span className="text-muted-foreground">Potência:</span>
+                <span className="ml-2 font-medium">{physicalParams.powerW.toFixed(2)} W</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Energia (5 min):</span>
+                <span className="ml-2 font-medium">{physicalParams.energyJ.toFixed(0)} J</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Dose:</span>
+                <span className="ml-2 font-medium">
+                  {physicalParams.doseJPerCm2.toFixed(1)} J/cm²
                 </span>
               </div>
-            );
-          })}
+              <div className="col-span-2">
+                <span className="text-muted-foreground">Classificação:</span>
+                <span className="ml-2 font-medium">{physicalParams.doseLabel}</span>
+              </div>
+            </div>
+          </Card>
         </div>
-        <p className="mt-3 text-xs text-muted-foreground">
-          Modelo físico com near field, atenuação em tecido (0.5 dB/cm/MHz) e foco gaussiano. 
-          O pico de intensidade ocorre na profundidade de foco ajustada. Frequências mais altas 
-          (3 MHz) têm atenuação mais rápida e campo próximo menor. Frequências mais baixas (1 MHz) 
-          penetram mais profundamente com foco mais largo.
-        </p>
-      </Card>
 
-      {/* Explanation Panel */}
-      <Card className="p-6">
-        <h4 className="font-semibold mb-3">Explicação dos parâmetros</h4>
-        <div className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            <strong>Ganho/Brilho (Intensidade):</strong> Aumenta a energia entregue ao tecido. 
-            Maior intensidade resulta em maior dose e aquecimento mais profundo, mas deve ser 
-            controlada para evitar desconforto ou lesão térmica.
-          </p>
-          <p>
-            <strong>Frequência (MHz):</strong> Determina a profundidade efetiva do feixe. 
-            Frequências mais baixas (~1 MHz) alcançam tecidos mais profundos, enquanto 
-            frequências mais altas (~3 MHz) concentram a energia nas camadas superficiais.
-          </p>
-          <p>
-            <strong>Profundidade/Foco:</strong> Ajusta a região de maior concentração de energia. 
-            A zona de foco pode ser deslocada para atingir estruturas específicas conforme a 
-            necessidade clínica.
+        {/* RIGHT: Controls Panel */}
+        <div className="space-y-4">
+          <Card className="p-5 bg-slate-50 dark:bg-slate-900">
+            <h4 className="text-base font-semibold mb-4">Controles do Transdutor</h4>
+
+            <div className="space-y-6">
+              {/* Gain control */}
+              {showGain && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <Label className="text-sm font-medium">Ganho / Brilho</Label>
+                      <p className="text-xs text-muted-foreground">Amplificação do sinal</p>
+                    </div>
+                    <span className="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">
+                      {physicalParams.intensity.toFixed(2)} W/cm²
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[gainPercent]}
+                    onValueChange={([v]) => setGainPercent(v)}
+                    className="py-2"
+                  />
+                </div>
+              )}
+
+              {/* Depth control */}
+              {showDepth && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <Label className="text-sm font-medium">Profundidade</Label>
+                      <p className="text-xs text-muted-foreground">Alcance do escaneamento</p>
+                    </div>
+                    <span className="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">
+                      {physicalParams.depthCm.toFixed(1)} cm
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[depthPercent]}
+                    onValueChange={([v]) => setDepthPercent(v)}
+                    className="py-2"
+                  />
+                </div>
+              )}
+
+              {/* Frequency control */}
+              {showFrequency && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <Label className="text-sm font-medium">Frequência</Label>
+                      <p className="text-xs text-muted-foreground">Resolução vs penetração</p>
+                    </div>
+                    <span className="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">
+                      {physicalParams.frequencyMHz.toFixed(1)} MHz
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[freqPercent]}
+                    onValueChange={([v]) => setFreqPercent(v)}
+                    className="py-2"
+                  />
+                </div>
+              )}
+
+              {/* Focus control */}
+              {showFocus && (
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <Label className="text-sm font-medium">Foco</Label>
+                      <p className="text-xs text-muted-foreground">Zona de maior nitidez</p>
+                    </div>
+                    <span className="text-xs font-mono bg-slate-200 dark:bg-slate-800 px-2 py-1 rounded">
+                      {physicalParams.focusCm.toFixed(1)} cm
+                    </span>
+                  </div>
+                  <Slider
+                    min={0}
+                    max={100}
+                    step={1}
+                    value={[focusPercent]}
+                    onValueChange={([v]) => setFocusPercent(v)}
+                    className="py-2"
+                  />
+                </div>
+              )}
+            </div>
+          </Card>
+
+          <p className="text-xs text-muted-foreground px-2">
+            Este simulador é um modelo didático simplificado para fins educacionais. Não substitui
+            protocolos clínicos reais.
           </p>
         </div>
-      </Card>
+      </div>
     </div>
   );
 };

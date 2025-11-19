@@ -327,23 +327,113 @@ export default function CapsulaBuilder() {
             </div>
 
             {capsula.tipo_visual === "lab" ? (
-              <div>
-                <Label>Tipo de Laboratório</Label>
-                <Select
-                  value={capsula.tipo_lab || ""}
-                  onValueChange={(value: any) => setCapsula({ ...capsula, tipo_lab: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o laboratório" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="mri_viewer">Visualizador de MRI</SelectItem>
-                    <SelectItem value="ultrasound_simulator">Simulador de Ultrassom</SelectItem>
-                    <SelectItem value="eletroterapia_lab">Lab de Eletroterapia</SelectItem>
-                    <SelectItem value="thermal_lab">Lab Termal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div>
+                  <Label>Tipo de Laboratório</Label>
+                  <Select
+                    value={capsula.tipo_lab || ""}
+                    onValueChange={(value: any) => setCapsula({ ...capsula, tipo_lab: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o laboratório" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mri_viewer">Visualizador de MRI</SelectItem>
+                      <SelectItem value="ultrasound_simulator">Simulador de Ultrassom</SelectItem>
+                      <SelectItem value="eletroterapia_lab">Lab de Eletroterapia</SelectItem>
+                      <SelectItem value="thermal_lab">Lab Termal</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Ultrasound Lab Configuration */}
+                {capsula.tipo_lab === "ultrasound_simulator" && (
+                  <Card className="p-4 bg-slate-50 dark:bg-slate-900">
+                    <h4 className="text-sm font-semibold mb-3">Configuração dos Controles do Simulador</h4>
+                    <p className="text-xs text-muted-foreground mb-4">
+                      Escolha quais controles serão exibidos para o aluno nesta cápsula
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showGain" className="text-sm">Exibir controle de Ganho / Brilho</Label>
+                        <Switch
+                          id="showGain"
+                          checked={capsula.ultrasound_lab_config?.showGain ?? true}
+                          onCheckedChange={(checked) =>
+                            setCapsula({
+                              ...capsula,
+                              ultrasound_lab_config: {
+                                enabled: true,
+                                showGain: checked,
+                                showDepth: capsula.ultrasound_lab_config?.showDepth ?? true,
+                                showFrequency: capsula.ultrasound_lab_config?.showFrequency ?? true,
+                                showFocus: capsula.ultrasound_lab_config?.showFocus ?? true,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showDepth" className="text-sm">Exibir controle de Profundidade</Label>
+                        <Switch
+                          id="showDepth"
+                          checked={capsula.ultrasound_lab_config?.showDepth ?? true}
+                          onCheckedChange={(checked) =>
+                            setCapsula({
+                              ...capsula,
+                              ultrasound_lab_config: {
+                                enabled: true,
+                                showGain: capsula.ultrasound_lab_config?.showGain ?? true,
+                                showDepth: checked,
+                                showFrequency: capsula.ultrasound_lab_config?.showFrequency ?? true,
+                                showFocus: capsula.ultrasound_lab_config?.showFocus ?? true,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showFrequency" className="text-sm">Exibir controle de Frequência (MHz)</Label>
+                        <Switch
+                          id="showFrequency"
+                          checked={capsula.ultrasound_lab_config?.showFrequency ?? true}
+                          onCheckedChange={(checked) =>
+                            setCapsula({
+                              ...capsula,
+                              ultrasound_lab_config: {
+                                enabled: true,
+                                showGain: capsula.ultrasound_lab_config?.showGain ?? true,
+                                showDepth: capsula.ultrasound_lab_config?.showDepth ?? true,
+                                showFrequency: checked,
+                                showFocus: capsula.ultrasound_lab_config?.showFocus ?? true,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="showFocus" className="text-sm">Exibir controle de Foco</Label>
+                        <Switch
+                          id="showFocus"
+                          checked={capsula.ultrasound_lab_config?.showFocus ?? true}
+                          onCheckedChange={(checked) =>
+                            setCapsula({
+                              ...capsula,
+                              ultrasound_lab_config: {
+                                enabled: true,
+                                showGain: capsula.ultrasound_lab_config?.showGain ?? true,
+                                showDepth: capsula.ultrasound_lab_config?.showDepth ?? true,
+                                showFrequency: capsula.ultrasound_lab_config?.showFrequency ?? true,
+                                showFocus: checked,
+                              },
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </Card>
+                )}
+              </>
             ) : (
               <div>
                 <Label>Upload de {capsula.tipo_visual === "video" ? "Vídeo" : "Imagem"}</Label>
