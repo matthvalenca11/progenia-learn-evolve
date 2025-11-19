@@ -1,4 +1,147 @@
 import { UltrasoundAnatomyPreset, UltrasoundAnatomyPresetId } from "@/types/ultrasoundPresets";
+import { UltrasoundLayerConfig, UltrasoundInclusionConfig } from "@/types/acousticMedia";
+
+/**
+ * Get default layers for a preset
+ */
+export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): UltrasoundLayerConfig[] {
+  const layersMap: Record<UltrasoundAnatomyPresetId, UltrasoundLayerConfig[]> = {
+    shoulder_supraspinatus_long: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.3 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.5 },
+      { id: "layer-3", mediumId: "tendon", name: "Tendão supraespinal", thicknessCm: 0.6 },
+      { id: "layer-4", mediumId: "bone_cortical", name: "Cabeça do úmero", thicknessCm: 2.0 },
+    ],
+    shoulder_biceps_long: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.3 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.4 },
+      { id: "layer-3", mediumId: "tendon", name: "Tendão do bíceps", thicknessCm: 0.5 },
+      { id: "layer-4", mediumId: "bone_cortical", name: "Sulco intertubercular", thicknessCm: 1.8 },
+    ],
+    carotid_long: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.2 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.5 },
+      { id: "layer-3", mediumId: "muscle", name: "Músculo esternocleidomastóideo", thicknessCm: 2.8 },
+    ],
+    carotid_trans: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.2 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.5 },
+      { id: "layer-3", mediumId: "muscle", name: "Músculo esternocleidomastóideo", thicknessCm: 2.8 },
+    ],
+    quadriceps_muscle: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.3 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.7 },
+      { id: "layer-3", mediumId: "muscle", name: "Músculo quadríceps", thicknessCm: 3.0 },
+      { id: "layer-4", mediumId: "bone_cortical", name: "Fêmur", thicknessCm: 0.5 },
+    ],
+    achilles_tendon_long: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.2 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 0.3 },
+      { id: "layer-3", mediumId: "tendon", name: "Tendão de Aquiles", thicknessCm: 0.6 },
+      { id: "layer-4", mediumId: "bone_cortical", name: "Calcâneo", thicknessCm: 1.4 },
+    ],
+    lumbar_paravertebral: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.3 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura subcutânea", thicknessCm: 1.0 },
+      { id: "layer-3", mediumId: "muscle", name: "Músculo paravertebral", thicknessCm: 3.5 },
+      { id: "layer-4", mediumId: "bone_cortical", name: "Vértebra", thicknessCm: 0.7 },
+    ],
+    generic_muscle: [
+      { id: "layer-1", mediumId: "skin", name: "Pele", thicknessCm: 0.3 },
+      { id: "layer-2", mediumId: "fat", name: "Gordura", thicknessCm: 0.5 },
+      { id: "layer-3", mediumId: "muscle", name: "Músculo", thicknessCm: 3.0 },
+    ],
+  };
+  
+  return layersMap[presetId] || layersMap.generic_muscle;
+}
+
+/**
+ * Get default inclusions for a preset
+ */
+export function getDefaultInclusionsForPreset(presetId: UltrasoundAnatomyPresetId): UltrasoundInclusionConfig[] {
+  const inclusionsMap: Record<UltrasoundAnatomyPresetId, UltrasoundInclusionConfig[]> = {
+    carotid_long: [
+      {
+        id: "incl-1",
+        type: "vessel",
+        label: "Artéria carótida comum",
+        shape: "ellipse",
+        centerDepthCm: 1.5,
+        centerLateralPos: 0,
+        sizeCm: { width: 0.8, height: 0.6 },
+        mediumInsideId: "blood",
+        hasStrongShadow: false,
+        posteriorEnhancement: true,
+        borderEchogenicity: "sharp",
+      },
+    ],
+    carotid_trans: [
+      {
+        id: "incl-1",
+        type: "vessel",
+        label: "Artéria carótida comum",
+        shape: "circle",
+        centerDepthCm: 1.5,
+        centerLateralPos: -0.2,
+        sizeCm: { width: 0.7, height: 0.7 },
+        mediumInsideId: "blood",
+        hasStrongShadow: false,
+        posteriorEnhancement: false,
+        borderEchogenicity: "sharp",
+      },
+      {
+        id: "incl-2",
+        type: "vessel",
+        label: "Veia jugular interna",
+        shape: "circle",
+        centerDepthCm: 1.2,
+        centerLateralPos: 0.3,
+        sizeCm: { width: 1.0, height: 1.0 },
+        mediumInsideId: "blood",
+        hasStrongShadow: false,
+        posteriorEnhancement: false,
+        borderEchogenicity: "soft",
+      },
+    ],
+    achilles_tendon_long: [
+      {
+        id: "incl-1",
+        type: "bone_surface",
+        label: "Superfície do calcâneo",
+        shape: "rectangle",
+        centerDepthCm: 2.0,
+        centerLateralPos: 0,
+        sizeCm: { width: 2.0, height: 0.3 },
+        mediumInsideId: "bone_cortical",
+        hasStrongShadow: true,
+        posteriorEnhancement: false,
+        borderEchogenicity: "sharp",
+      },
+    ],
+    quadriceps_muscle: [
+      {
+        id: "incl-1",
+        type: "bone_surface",
+        label: "Superfície do fêmur",
+        shape: "rectangle",
+        centerDepthCm: 4.0,
+        centerLateralPos: 0,
+        sizeCm: { width: 3.0, height: 0.2 },
+        mediumInsideId: "bone_cortical",
+        hasStrongShadow: true,
+        posteriorEnhancement: false,
+        borderEchogenicity: "sharp",
+      },
+    ],
+    shoulder_supraspinatus_long: [],
+    shoulder_biceps_long: [],
+    lumbar_paravertebral: [],
+    generic_muscle: [],
+  };
+  
+  return inclusionsMap[presetId] || [];
+}
 
 /**
  * Real clinical ultrasound anatomy presets

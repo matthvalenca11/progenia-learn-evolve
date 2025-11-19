@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { UltrasoundAnatomyPresetId } from "@/types/ultrasoundPresets";
+import { UltrasoundLayerConfig, UltrasoundInclusionConfig } from "@/types/acousticMedia";
 
 export type VirtualLabType = "ultrasound" | "electrotherapy" | "thermal" | "other";
 
@@ -17,6 +18,9 @@ export type UltrasoundLabConfig = {
   initialDepth?: number;
   initialFrequencyMHz?: number;
   initialFocusCm?: number;
+  // Advanced physics configuration
+  layers?: UltrasoundLayerConfig[];
+  inclusions?: UltrasoundInclusionConfig[];
 };
 
 export type VirtualLab = {
