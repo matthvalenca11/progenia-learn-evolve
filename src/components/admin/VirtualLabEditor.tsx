@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { UltrasoundLabBuilder } from "./ultrasound/UltrasoundLabBuilder";
+import { useUltrasoundLabStore } from "@/stores/ultrasoundLabStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
