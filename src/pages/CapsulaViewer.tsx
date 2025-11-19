@@ -14,6 +14,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ArrowLeft, ArrowRight, CheckCircle2, Lightbulb, Sparkles } from "lucide-react";
 import { MRIViewer } from "@/components/labs/MRIViewer";
 import { UltrasoundSimulator } from "@/components/labs/UltrasoundSimulator";
+import { UltrasoundSimulatorAdvanced } from "@/components/labs/UltrasoundSimulatorAdvanced";
 import { EletroterapiaLab } from "@/components/labs/EletroterapiaLab";
 import { ThermalLab } from "@/components/labs/ThermalLab";
 
@@ -195,7 +196,9 @@ export default function CapsulaViewer() {
       case "mri_viewer":
         return <MRIViewer config={defaultConfig} />;
       case "ultrasound_simulator":
-        return <UltrasoundSimulator config={capsula.ultrasound_lab_config} />;
+        return <UltrasoundSimulator config={capsula.ultrasound_lab_config || defaultConfig} />;
+      case "ultrassom_avancado":
+        return <UltrasoundSimulatorAdvanced config={capsula.ultrasound_lab_config as any} />;
       case "eletroterapia_lab":
         return <EletroterapiaLab config={defaultConfig} />;
       case "thermal_lab":
