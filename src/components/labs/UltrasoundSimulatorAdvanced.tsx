@@ -285,8 +285,7 @@ export const UltrasoundSimulatorAdvanced = ({
                 <SelectContent>
                   <SelectItem value="linear">Linear (7-18 MHz)</SelectItem>
                   <SelectItem value="convex">Convexo (2-6 MHz)</SelectItem>
-                  <SelectItem value="phased">Phased Array (1-5 MHz)</SelectItem>
-                  <SelectItem value="high-freq">Alta Freq (12-22 MHz)</SelectItem>
+                  <SelectItem value="microconvex">Microconvexo (5-10 MHz)</SelectItem>
                 </SelectContent>
               </Select>
             </Card>

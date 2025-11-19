@@ -434,7 +434,7 @@ const UltrasoundFullSimulator = () => {
                 <SelectContent>
                   <SelectItem value="linear">Linear (7-12 MHz)</SelectItem>
                   <SelectItem value="curved">Convexo (2-6 MHz)</SelectItem>
-                  <SelectItem value="phased">Phased Array (2-4 MHz)</SelectItem>
+                  <SelectItem value="microconvex">Microconvexo (5-10 MHz)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
