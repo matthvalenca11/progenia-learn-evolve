@@ -176,6 +176,7 @@ export type Database = {
           tipo_lab: string | null
           tipo_visual: string
           titulo: string
+          ultrasound_lab_config: Json | null
           updated_at: string
           visual_path: string | null
         }
@@ -193,6 +194,7 @@ export type Database = {
           tipo_lab?: string | null
           tipo_visual: string
           titulo: string
+          ultrasound_lab_config?: Json | null
           updated_at?: string
           visual_path?: string | null
         }
@@ -210,6 +212,7 @@ export type Database = {
           tipo_lab?: string | null
           tipo_visual?: string
           titulo?: string
+          ultrasound_lab_config?: Json | null
           updated_at?: string
           visual_path?: string | null
         }
