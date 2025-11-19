@@ -27,8 +27,17 @@ export default defineConfig(({ mode }) => ({
       'react', 
       'react-dom', 
       'react/jsx-runtime',
-      '@radix-ui/react-tooltip',
     ],
+    exclude: [],
     force: true,
+    esbuildOptions: {
+      resolveExtensions: ['.tsx', '.ts', '.jsx', '.js'],
+    },
+  },
+  build: {
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
   },
 }));
