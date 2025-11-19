@@ -1096,25 +1096,31 @@ export type Database = {
         Row: {
           config_data: Json
           created_at: string | null
+          description: string | null
           id: string
           lab_type: string
           lesson_id: string | null
+          name: string | null
           updated_at: string | null
         }
         Insert: {
           config_data?: Json
           created_at?: string | null
+          description?: string | null
           id?: string
           lab_type: string
           lesson_id?: string | null
+          name?: string | null
           updated_at?: string | null
         }
         Update: {
           config_data?: Json
           created_at?: string | null
+          description?: string | null
           id?: string
           lab_type?: string
           lesson_id?: string | null
+          name?: string | null
           updated_at?: string | null
         }
         Relationships: [

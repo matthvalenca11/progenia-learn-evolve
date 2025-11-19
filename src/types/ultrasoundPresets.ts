@@ -3,7 +3,8 @@
  * Real clinical anatomy configurations for ultrasound simulator
  */
 
-export type UltrasoundAnatomyPresetId =
+export type UltrasoundAnatomyPresetId = 
+  | "custom"
   | "msk_tendon_upper_limb"
   | "shoulder_supraspinatus_long"
   | "carotid_long"

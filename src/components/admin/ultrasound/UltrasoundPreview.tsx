@@ -94,7 +94,7 @@ export const UltrasoundPreview = () => {
   };
   
   return (
-    <Card className="sticky top-4">
+    <Card className="lg:sticky lg:top-6 lg:self-start">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
