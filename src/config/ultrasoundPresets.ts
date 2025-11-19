@@ -36,7 +36,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.5, noiseScale: 0.8, reflectivityBias: -0.15 },
       { id: "deltoid", mediumId: "muscle", name: "Deltoide", thicknessCm: 1.0, noiseScale: 1.0, reflectivityBias: 0.0 },
       { id: "supraspinatus", mediumId: "tendon", name: "Tendão Supraespinhal", thicknessCm: 0.6, noiseScale: 1.5, reflectivityBias: 0.25 },
-      { id: "bone", mediumId: "bone", name: "Úmero", thicknessCm: 0.3, noiseScale: 0.5, reflectivityBias: 0.5 },
+      { id: "bone", mediumId: "bone_cortical", name: "Úmero", thicknessCm: 0.3, noiseScale: 0.5, reflectivityBias: 0.5 },
     ],
     
     // SHOULDER - BICEPS (Long axis)
@@ -45,7 +45,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.3, noiseScale: 0.9, reflectivityBias: -0.12 },
       { id: "biceps_tendon", mediumId: "tendon", name: "Tendão do Bíceps", thicknessCm: 0.45, noiseScale: 1.6, reflectivityBias: 0.28 },
       { id: "groove", mediumId: "cartilage", name: "Sulco Intertubercular", thicknessCm: 0.6, noiseScale: 1.1, reflectivityBias: 0.15 },
-      { id: "humerus", mediumId: "bone", name: "Úmero", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
+      { id: "humerus", mediumId: "bone_cortical", name: "Úmero", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
     ],
     
     // ACHILLES TENDON (Long axis) - Ref: Normal thickness 4-6mm, depth 5-8mm
@@ -55,7 +55,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "paratenon", mediumId: "fascia", name: "Paratendão", thicknessCm: 0.1, noiseScale: 1.8, reflectivityBias: 0.35 },
       { id: "achilles", mediumId: "tendon", name: "Tendão de Aquiles", thicknessCm: 0.5, noiseScale: 1.6, reflectivityBias: 0.20 },
       { id: "kager", mediumId: "fat", name: "Gordura de Kager", thicknessCm: 0.8, noiseScale: 0.7, reflectivityBias: -0.20 },
-      { id: "calcaneus", mediumId: "bone", name: "Calcâneo", thicknessCm: 0.4, noiseScale: 0.4, reflectivityBias: 0.55 },
+      { id: "calcaneus", mediumId: "bone_cortical", name: "Calcâneo", thicknessCm: 0.4, noiseScale: 0.4, reflectivityBias: 0.55 },
     ],
     
     // CAROTID ARTERY (Long axis) - Ref: Depth 15-25mm, diameter 6-8mm
@@ -86,7 +86,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "fascia", mediumId: "fascia", name: "Fáscia", thicknessCm: 0.05, noiseScale: 1.9, reflectivityBias: 0.38 },
       { id: "rectus", mediumId: "muscle", name: "Reto Femoral", thicknessCm: 2.0, noiseScale: 1.0, reflectivityBias: 0.05 },
       { id: "vastus", mediumId: "muscle", name: "Vasto Intermédio", thicknessCm: 1.5, noiseScale: 1.1, reflectivityBias: 0.0 },
-      { id: "femur", mediumId: "bone", name: "Fêmur", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
+      { id: "femur", mediumId: "bone_cortical", name: "Fêmur", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
     ],
     
     // LUMBAR PARAVERTEBRAL - Deeper structure, needs convex probe
@@ -96,7 +96,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "fascia", mediumId: "fascia", name: "Fáscia Toracolombar", thicknessCm: 0.1, noiseScale: 2.0, reflectivityBias: 0.42 },
       { id: "erector", mediumId: "muscle", name: "Eretor da Espinha", thicknessCm: 2.5, noiseScale: 1.0, reflectivityBias: 0.08 },
       { id: "multifidus", mediumId: "muscle", name: "Multífido", thicknessCm: 1.8, noiseScale: 1.1, reflectivityBias: 0.05 },
-      { id: "vertebra", mediumId: "bone", name: "Processo Transverso", thicknessCm: 0.5, noiseScale: 0.4, reflectivityBias: 0.58 },
+      { id: "vertebra", mediumId: "bone_cortical", name: "Processo Transverso", thicknessCm: 0.5, noiseScale: 0.4, reflectivityBias: 0.58 },
     ],
     
     // RECTUS ABDOMINIS - Ref: Muscle 8-12mm, subcutaneous fat 5-25mm
@@ -116,7 +116,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "paratenon", mediumId: "fascia", name: "Paratendão", thicknessCm: 0.05, noiseScale: 2.0, reflectivityBias: 0.40 },
       { id: "tendon", mediumId: "tendon", name: "Tendão", thicknessCm: 0.4, noiseScale: 1.7, reflectivityBias: 0.30 },
       { id: "muscle", mediumId: "muscle", name: "Músculo", thicknessCm: 1.5, noiseScale: 1.0, reflectivityBias: 0.0 },
-      { id: "bone", mediumId: "bone", name: "Osso", thicknessCm: 0.3, noiseScale: 0.5, reflectivityBias: 0.50 },
+      { id: "bone", mediumId: "bone_cortical", name: "Osso", thicknessCm: 0.3, noiseScale: 0.5, reflectivityBias: 0.50 },
     ],
     
     // GENERIC MUSCLE (teaching basic ultrasound)
@@ -125,7 +125,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.6, noiseScale: 0.8, reflectivityBias: -0.15 },
       { id: "fascia", mediumId: "fascia", name: "Fáscia", thicknessCm: 0.05, noiseScale: 1.9, reflectivityBias: 0.38 },
       { id: "muscle", mediumId: "muscle", name: "Músculo", thicknessCm: 2.5, noiseScale: 1.0, reflectivityBias: 0.05 },
-      { id: "bone", mediumId: "bone", name: "Osso", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
+      { id: "bone", mediumId: "bone_cortical", name: "Osso", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
     ],
     
     // VASCULAR - Superficial vessels for Doppler
@@ -145,7 +145,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.8, noiseScale: 0.8, reflectivityBias: -0.15 },
       { id: "muscle_upper", mediumId: "muscle", name: "Músculo Superficial", thicknessCm: 1.5, noiseScale: 1.0, reflectivityBias: 0.05 },
       { id: "muscle_deep", mediumId: "muscle", name: "Músculo Profundo", thicknessCm: 2.0, noiseScale: 1.0, reflectivityBias: 0.0 },
-      { id: "bone", mediumId: "bone", name: "Osso", thicknessCm: 0.5, noiseScale: 0.5, reflectivityBias: 0.52 },
+      { id: "bone", mediumId: "bone_cortical", name: "Osso", thicknessCm: 0.5, noiseScale: 0.5, reflectivityBias: 0.52 },
     ],
     
     // GENERIC MUSCLE (alias for compatibility)
@@ -154,7 +154,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
       { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.6, noiseScale: 0.8, reflectivityBias: -0.15 },
       { id: "fascia", mediumId: "fascia", name: "Fáscia", thicknessCm: 0.05, noiseScale: 1.9, reflectivityBias: 0.38 },
       { id: "muscle", mediumId: "muscle", name: "Músculo", thicknessCm: 2.5, noiseScale: 1.0, reflectivityBias: 0.05 },
-      { id: "bone", mediumId: "bone", name: "Osso", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
+      { id: "bone", mediumId: "bone_cortical", name: "Osso", thicknessCm: 0.4, noiseScale: 0.5, reflectivityBias: 0.52 },
     ],
   };
   
@@ -249,7 +249,7 @@ export function getDefaultInclusionsForPreset(presetId: UltrasoundAnatomyPresetI
         centerDepthCm: 1.2,
         centerLateralPos: 0.15,
         sizeCm: { width: 0.3, height: 0.15 },
-        mediumInsideId: "bone",
+        mediumInsideId: "bone_cortical",
         hasStrongShadow: true,
         posteriorEnhancement: false,
         borderEchogenicity: "sharp",
