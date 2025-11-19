@@ -2,59 +2,34 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import fs from "fs";
-
-// AGGRESSIVE CACHE CLEANING - Force clean ALL possible cache directories
-const cleanCache = () => {
-  const cacheDirs = [
-    path.resolve(__dirname, "node_modules/.vite"),
-    path.resolve(__dirname, "node_modules/.vite-fresh"),
-    path.resolve(__dirname, ".vite"),
-    path.resolve(__dirname, "dist"),
-  ];
-  
-  cacheDirs.forEach(dir => {
-    if (fs.existsSync(dir)) {
-      console.log(`🧹 Cleaning ${dir}...`);
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
-  });
-  console.log("✅ All caches cleared!");
-};
-
-cleanCache();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    // Force complete restart on file changes
-    watch: {
-      usePolling: true,
-    },
   },
-  // Use a specific cache directory and force its recreation
-  cacheDir: path.resolve(__dirname, "node_modules/.vite-fresh"),
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // CRITICAL: Force ALL React imports to use the exact same instance
+      // CRITICAL FIX: Force single React instance by explicit aliasing
       "react": path.resolve(__dirname, "./node_modules/react"),
       "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
       "react/jsx-runtime": path.resolve(__dirname, "./node_modules/react/jsx-runtime"),
     },
+    // Dedupe React to prevent multiple instances
     dedupe: ["react", "react-dom"],
   },
   optimizeDeps: {
+    // Pre-bundle React to ensure single instance
     include: [
       "react",
       "react-dom",
       "react/jsx-runtime",
       "react/jsx-dev-runtime",
     ],
-    // Force complete rebuild to clear any cached duplicate instances
+    // Force fresh rebuild
     force: true,
     esbuildOptions: {
       resolveExtensions: [".tsx", ".ts", ".jsx", ".js"],
@@ -64,7 +39,7 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       output: {
         manualChunks: {
-          // Force React into a single vendor chunk to prevent duplication
+          // Consolidate React into single vendor chunk
           'react-vendor': ['react', 'react-dom', 'react/jsx-runtime'],
         },
       },
