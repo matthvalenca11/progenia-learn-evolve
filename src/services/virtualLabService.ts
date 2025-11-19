@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { UltrasoundAnatomyPresetId } from "@/types/ultrasoundPresets";
 import { UltrasoundLayerConfig, UltrasoundInclusionConfig } from "@/types/acousticMedia";
+import { UltrasoundSimulationFeatures, ComplexityLevel } from "@/types/ultrasoundAdvanced";
 
 export type VirtualLabType = "ultrasound" | "electrotherapy" | "thermal" | "other";
 
@@ -21,6 +22,9 @@ export type UltrasoundLabConfig = {
   // Advanced physics configuration
   layers?: UltrasoundLayerConfig[];
   inclusions?: UltrasoundInclusionConfig[];
+  // Simulation features
+  simulationFeatures?: UltrasoundSimulationFeatures;
+  complexityLevel?: ComplexityLevel;
 };
 
 export type VirtualLab = {
