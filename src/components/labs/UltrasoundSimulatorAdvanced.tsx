@@ -37,9 +37,6 @@ export const UltrasoundSimulatorAdvanced = ({
     showDynamicRange,
     showTransducerSelector,
     showModeSelector,
-    showCompoundToggle,
-    showHarmonicToggle,
-    showZoom,
     presetAnatomy,
     lockGain,
     lockDepth,
@@ -61,9 +58,6 @@ export const UltrasoundSimulatorAdvanced = ({
   const [tgcCurve, setTgcCurve] = useState<number[]>([50, 50, 50, 50, 50, 50, 50, 50]);
   const [selectedTransducer, setSelectedTransducer] = useState<TransducerType>(initialTransducer);
   const [selectedMode, setSelectedMode] = useState<ImagingMode>(initialMode);
-  const [compoundEnabled, setCompoundEnabled] = useState(false);
-  const [harmonicEnabled, setHarmonicEnabled] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState(100);
   const [isFrozen, setIsFrozen] = useState(false);
 
   // Refs and hooks
@@ -107,9 +101,6 @@ export const UltrasoundSimulatorAdvanced = ({
       tgcCurve: showTGC ? tgcCurve : [50, 50, 50, 50, 50, 50, 50, 50],
       transducer: transducerSpecs[effectiveTransducer],
       mode: showModeSelector ? selectedMode : initialMode,
-      compoundEnabled: showCompoundToggle ? compoundEnabled : false,
-      harmonicEnabled: showHarmonicToggle ? harmonicEnabled : false,
-      zoom: showZoom ? zoomLevel : 100,
       width: canvasSize.width,
       height: canvasSize.height,
       time: 0,
@@ -139,11 +130,7 @@ export const UltrasoundSimulatorAdvanced = ({
   const getModeColor = (mode: ImagingMode) => {
     switch (mode) {
       case 'b-mode': return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
-      case 'm-mode': return 'bg-green-500/20 text-green-300 border-green-500/40';
       case 'color-doppler': return 'bg-red-500/20 text-red-300 border-red-500/40';
-      case 'pw-doppler': return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
-      case 'harmonic': return 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40';
-      case 'compound': return 'bg-blue-500/20 text-blue-300 border-blue-500/40';
       default: return 'bg-slate-500/20 text-slate-300 border-slate-500/40';
     }
   };
@@ -237,8 +224,6 @@ export const UltrasoundSimulatorAdvanced = ({
                   {showFocus && <span className="text-yellow-400 font-semibold">FOC: {effectiveFocus.toFixed(1)}cm</span>}
                 </div>
                 <div className="flex items-center gap-2">
-                  {compoundEnabled && <Badge className="text-[7px] px-1 py-0 bg-blue-500/30">CPD</Badge>}
-                  {harmonicEnabled && <Badge className="text-[7px] px-1 py-0 bg-yellow-500/30">H</Badge>}
                   <Button
                     size="sm"
                     variant={isFrozen ? "default" : "outline"}
@@ -255,8 +240,8 @@ export const UltrasoundSimulatorAdvanced = ({
           {/* Mode Selector */}
           {showModeSelector && (
             <Card className="p-4 bg-slate-50 dark:bg-slate-900">
-              <div className="grid grid-cols-3 gap-2">
-                {(['b-mode', 'color-doppler', 'harmonic'] as ImagingMode[]).map((mode) => (
+              <div className="grid grid-cols-2 gap-2">
+                {(['b-mode', 'color-doppler'] as ImagingMode[]).map((mode) => (
                   <Button
                     key={mode}
                     variant={selectedMode === mode ? "default" : "outline"}
@@ -267,15 +252,8 @@ export const UltrasoundSimulatorAdvanced = ({
                     <Radio className="w-3 h-3 mr-1" />
                     {mode === 'b-mode' && 'B-Mode'}
                     {mode === 'color-doppler' && 'Doppler Color'}
-                    {mode === 'harmonic' && 'Harmônica'}
                   </Button>
                 ))}
-                <Button variant="outline" size="sm" disabled className="text-xs opacity-50">
-                  M-Mode (Em breve)
-                </Button>
-                <Button variant="outline" size="sm" disabled className="text-xs opacity-50">
-                  PW Doppler (Em breve)
-                </Button>
               </div>
             </Card>
           )}
@@ -444,31 +422,6 @@ export const UltrasoundSimulatorAdvanced = ({
               </div>
             </Card>
           )}
-
-          {/* Advanced Features */}
-          <Card className="p-4 bg-slate-50 dark:bg-slate-900">
-            <h4 className="text-xs font-semibold mb-3">Recursos Avançados</h4>
-            <div className="space-y-3">
-              {showCompoundToggle && (
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Compounding</Label>
-                  <Switch
-                    checked={compoundEnabled}
-                    onCheckedChange={setCompoundEnabled}
-                  />
-                </div>
-              )}
-              {showHarmonicToggle && (
-                <div className="flex items-center justify-between">
-                  <Label className="text-xs">Imagem Harmônica</Label>
-                  <Switch
-                    checked={harmonicEnabled}
-                    onCheckedChange={setHarmonicEnabled}
-                  />
-                </div>
-              )}
-            </div>
-          </Card>
 
           <p className="text-[10px] text-muted-foreground px-2 leading-tight">
             Simulador avançado multimodal para fins educacionais. Não substitui equipamentos reais ou protocolos clínicos.

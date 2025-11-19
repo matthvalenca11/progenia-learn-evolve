@@ -357,9 +357,6 @@ export default function VirtualLabEditor() {
                       showDynamicRange: false,
                       showTransducerSelector: false,
                       showModeSelector: false,
-                      showCompoundToggle: false,
-                      showHarmonicToggle: false,
-                      showZoom: false,
                       presetAnatomy: (currentPreset?.tissueProfile || "muscle") as any,
                       lockGain: false,
                       lockDepth: false,
@@ -368,7 +365,9 @@ export default function VirtualLabEditor() {
                       initialGain: currentPreset?.recommendedGain || 50,
                       initialDepth: currentPreset?.recommendedDepthCm || 6,
                       initialFrequency: currentPreset?.recommendedFrequencyMHz || 7.5,
-                      initialTransducer: currentPreset?.transducerType || "linear",
+                      initialTransducer: (currentPreset?.transducerType === 'linear' || currentPreset?.transducerType === 'convex') 
+                        ? currentPreset.transducerType 
+                        : "linear",
                       initialMode: "b-mode",
                     }}
                   />

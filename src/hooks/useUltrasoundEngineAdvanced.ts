@@ -84,7 +84,7 @@ function generateAdvancedUltrasoundFrame(
   params: UltrasoundPhysicsParams,
   layers: AnatomyLayer[]
 ): void {
-  const { width, height, gain, depth, frequency, focus, dynamicRange, tgcCurve, transducer, mode, compoundEnabled, harmonicEnabled, time } = params;
+  const { width, height, gain, depth, frequency, focus, dynamicRange, tgcCurve, transducer, mode, time } = params;
 
   const imageData = ctx.createImageData(width, height);
   const data = imageData.data;
@@ -100,13 +100,13 @@ function generateAdvancedUltrasoundFrame(
   const { geometryType, beamAngle } = transducer;
   
   // Generate velocity field for Doppler modes
-  const velocityField = (mode === 'color-doppler' || mode === 'pw-doppler') 
+  const velocityField = (mode === 'color-doppler') 
     ? generateVelocityField(width, height, layers, maxDepthCm)
     : null;
 
-  // Compound imaging: simulate multiple angles
-  const numAngles = compoundEnabled ? 5 : 1;
-  const angleRange = compoundEnabled ? 15 : 0; // degrees
+  // Simple beam simulation
+  const numAngles = 1;
+  const angleRange = 0;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -265,34 +265,7 @@ function generateAdvancedUltrasoundFrame(
         tissueBoost *= 0.4 + 0.6 * shadowFactor;
       }
 
-      // Compound imaging simulation
-      let compoundFactor = 1.0;
-      if (compoundEnabled) {
-        let angleSum = 0;
-        for (let a = 0; a < numAngles; a++) {
-          const angleDeg = ((a / (numAngles - 1)) - 0.5) * angleRange;
-          const angleRad = (angleDeg * Math.PI) / 180;
-          const lateralShift = Math.tan(angleRad) * depthRatio * 100;
-          const shiftedX = x + lateralShift;
-          if (shiftedX >= 0 && shiftedX < width) {
-            angleSum += 1.0;
-          }
-        }
-        compoundFactor = 0.85 + 0.15 * (angleSum / numAngles);
-      }
-
-      // Harmonic imaging
-      let harmonicFactor = 1.0;
-      if (harmonicEnabled) {
-        // Harmonic reduces near-field clutter and improves contrast
-        const harmonicDepthFactor = Math.min(depthRatio * 3, 1);
-        harmonicFactor = 1.0 - 0.3 * (1 - harmonicDepthFactor);
-        if (currentLayer?.echogenicity === 'anechoic') {
-          harmonicFactor *= 0.7; // Better cyst visualization
-        }
-      }
-
-      // Combine all factors for B-mode
+      // Apply all modulations
       let intensity =
         tissueReflectivity *
         attenuationFactor *
