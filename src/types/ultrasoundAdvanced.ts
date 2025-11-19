@@ -3,9 +3,15 @@
  * Multi-modal ultrasound simulation engine
  */
 
-export type TransducerType = 'linear' | 'convex' | 'phased' | 'high-freq' | 'endocavitary';
-export type ImagingMode = 'b-mode' | 'm-mode' | 'color-doppler' | 'pw-doppler' | 'harmonic' | 'compound';
-export type AnatomyPreset = 'muscle' | 'vascular' | 'tendon' | 'bone' | 'liver' | 'kidney' | 'generic';
+export type TransducerType = 'linear' | 'convex' | 'microconvex';
+export type ImagingMode = 'b-mode' | 'color-doppler';
+export type AnatomyPreset = 
+  | 'msk_tendon_upper_limb'
+  | 'muscle_generic'
+  | 'abdominal_superficial'
+  | 'vascular_superficial'
+  | 'tissue_with_inclusions'
+  | 'generic';
 
 /**
  * Extended configuration for advanced ultrasound lab
@@ -22,9 +28,6 @@ export type UltrasoundLabConfigAdvanced = {
   showDynamicRange: boolean;
   showTransducerSelector: boolean;
   showModeSelector: boolean;
-  showCompoundToggle: boolean;
-  showHarmonicToggle: boolean;
-  showZoom: boolean;
   
   // Pre-configured anatomy target
   presetAnatomy: AnatomyPreset;
@@ -56,9 +59,6 @@ export const DEFAULT_ULTRASOUND_CONFIG_ADVANCED: UltrasoundLabConfigAdvanced = {
   showDynamicRange: true,
   showTransducerSelector: true,
   showModeSelector: true,
-  showCompoundToggle: true,
-  showHarmonicToggle: true,
-  showZoom: true,
   presetAnatomy: 'generic',
   initialGain: 50,
   initialDepth: 6,
@@ -93,9 +93,6 @@ export type UltrasoundPhysicsParams = {
   tgcCurve: number[]; // 8 values for TGC
   transducer: TransducerSpec;
   mode: ImagingMode;
-  compoundEnabled: boolean;
-  harmonicEnabled: boolean;
-  zoom: number;
   width: number;
   height: number;
   time: number;
