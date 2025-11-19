@@ -125,7 +125,7 @@ export default function VirtualLabsAdmin() {
             Gerencie laboratórios virtuais reutilizáveis
           </p>
         </div>
-        <Button onClick={() => navigate("/admin/labs/new")} size="lg">
+        <Button onClick={() => navigate("/admin/labs/novo")} size="lg">
           <Plus className="h-4 w-4 mr-2" />
           Criar Novo Laboratório
         </Button>
@@ -168,7 +168,7 @@ export default function VirtualLabsAdmin() {
               </p>
               {!searchTerm && (
                 <Button
-                  onClick={() => navigate("/admin/labs/new")}
+                  onClick={() => navigate("/admin/labs/novo")}
                   variant="outline"
                   className="mt-4"
                 >
@@ -206,7 +206,7 @@ export default function VirtualLabsAdmin() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => navigate(`/admin/labs/edit/${lab.id}`)}
+                          onClick={() => navigate(`/admin/labs/editar/${lab.id}`)}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
