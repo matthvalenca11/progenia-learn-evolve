@@ -32,15 +32,15 @@ export default function VirtualLabEditor() {
     lab_type: "ultrasound",
     config_data: {
       ultrasoundConfig: {
-        presetId: "generic_muscle",
+        presetId: "muscle_generic",
         controls: {
           showGain: true,
           showDepth: true,
           showFrequency: true,
           showFocus: true,
         },
-        layers: getDefaultLayersForPreset("generic_muscle"),
-        inclusions: getDefaultInclusionsForPreset("generic_muscle"),
+        layers: getDefaultLayersForPreset("muscle_generic"),
+        inclusions: getDefaultInclusionsForPreset("muscle_generic"),
         simulationFeatures: DEFAULT_SIMULATION_FEATURES,
         complexityLevel: "intermediario",
       },

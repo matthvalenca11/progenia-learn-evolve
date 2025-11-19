@@ -5,18 +5,10 @@
 
 export type UltrasoundAnatomyPresetId =
   | "msk_tendon_upper_limb"
-  | "muscle_generic"
-  | "abdominal_superficial"
-  | "vascular_superficial"
-  | "tissue_with_inclusions"
   | "shoulder_supraspinatus_long"
-  | "shoulder_biceps_long"
   | "carotid_long"
   | "carotid_trans"
-  | "quadriceps_muscle"
-  | "achilles_tendon_long"
-  | "lumbar_paravertebral"
-  | "generic_muscle";
+  | "muscle_generic";
 
 export type TissueProfile = "muscle" | "tendon" | "vascular" | "bone_surface" | "liver_like";
 
