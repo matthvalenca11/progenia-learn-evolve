@@ -276,8 +276,6 @@ function generateAdvancedUltrasoundFrame(
         posteriorEnhancement *
         blurFactor *
         textureModulation *
-        compoundFactor *
-        harmonicFactor *
         (0.35 + 0.65 * speckleNoise);
 
       // Add motion jitter
