@@ -276,34 +276,90 @@ export default function VirtualLabsAdmin() {
 
       {/* Test Lab Dialog */}
       <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[95vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Testar Laboratório: {labToTest?.name}</DialogTitle>
             <DialogDescription>
-              {labToTest?.description || "Pré-visualização do laboratório virtual"}
+              {labToTest?.description || "Pré-visualização completa do laboratório virtual"}
             </DialogDescription>
           </DialogHeader>
-          <div className="mt-4">
-            {labToTest?.lab_type === "ultrasound" && (
-              <UltrasoundSimulatorAdvanced
-                config={labToTest.config_data as any}
-                title={labToTest.name}
-                description={labToTest.description || ""}
-              />
-            )}
+          <div className="flex-1 overflow-y-auto">
+            {labToTest?.lab_type === "ultrasound" && labToTest.config_data && (() => {
+              // Convert lab config to simulator format with ALL controls enabled for testing
+              const labConfig = labToTest.config_data as any;
+              const ultrasoundConfig = labConfig.ultrasoundConfig || labConfig;
+              
+              // Build full test configuration with all features enabled
+              const testConfig = {
+                enabled: true,
+                // Enable ALL controls for admin testing
+                showGain: true,
+                showDepth: true,
+                showFrequency: true,
+                showFocus: true,
+                showTGC: true,
+                showDynamicRange: true,
+                showTransducerSelector: true,
+                showModeSelector: true,
+                // Use configured values or sensible defaults
+                presetAnatomy: ultrasoundConfig.presetId || 'generic',
+                initialGain: ultrasoundConfig.initialGain || ultrasoundConfig.gain || 50,
+                initialDepth: ultrasoundConfig.initialDepth || ultrasoundConfig.depth || 6,
+                initialFrequency: ultrasoundConfig.initialFrequency || ultrasoundConfig.frequency || 7.5,
+                initialTransducer: ultrasoundConfig.transducerType || ultrasoundConfig.initialTransducer || 'linear',
+                initialMode: ultrasoundConfig.mode || ultrasoundConfig.initialMode || 'b-mode',
+                // Enable ALL simulation features for complete testing
+                simulationFeatures: {
+                  showStructuralBMode: true,
+                  showBeamOverlay: true,
+                  showDepthScale: true,
+                  showFocusMarker: true,
+                  showPhysicsPanel: true,
+                  enablePosteriorEnhancement: true,
+                  enableAcousticShadow: true,
+                  enableReverberation: true,
+                  enableNearFieldClutter: true,
+                  showFieldLines: true,
+                  showAttenuationMap: true,
+                  enableColorDoppler: true,
+                  showAnatomyLabels: true,
+                  ...(ultrasoundConfig.simulationFeatures || {}),
+                },
+                complexityLevel: ultrasoundConfig.complexityLevel || 'avancado',
+                // Don't lock anything in test mode
+                lockGain: false,
+                lockDepth: false,
+                lockFrequency: false,
+                lockTransducer: false,
+              };
+
+              return (
+                <UltrasoundSimulatorAdvanced
+                  config={testConfig}
+                  title={labToTest.name}
+                  description={labToTest.description || ""}
+                />
+              );
+            })()}
             {labToTest?.lab_type === "electrotherapy" && (
               <div className="p-8 text-center text-muted-foreground">
-                <p>Simulador de eletroterapia em desenvolvimento</p>
+                <Beaker className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Simulador de eletroterapia em desenvolvimento</p>
+                <p className="text-sm mt-2">Em breve você poderá testar este tipo de laboratório</p>
               </div>
             )}
             {labToTest?.lab_type === "thermal" && (
               <div className="p-8 text-center text-muted-foreground">
-                <p>Simulador térmico em desenvolvimento</p>
+                <Beaker className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Simulador térmico em desenvolvimento</p>
+                <p className="text-sm mt-2">Em breve você poderá testar este tipo de laboratório</p>
               </div>
             )}
-            {!labToTest?.lab_type && (
+            {(!labToTest?.lab_type || (labToTest?.lab_type === "other")) && (
               <div className="p-8 text-center text-muted-foreground">
-                <p>Tipo de laboratório não identificado</p>
+                <Beaker className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg font-medium">Tipo de laboratório não reconhecido</p>
+                <p className="text-sm mt-2">Verifique a configuração do laboratório</p>
               </div>
             )}
           </div>
