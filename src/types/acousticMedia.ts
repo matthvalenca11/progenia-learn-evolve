@@ -124,6 +124,15 @@ export const ACOUSTIC_MEDIA: Record<AcousticMediumId, AcousticMedium> = {
     attenuation_dB_per_cm_MHz: 0.9,
     baseEchogenicity: "isoechoic",
   },
+  fascia: {
+    id: "fascia",
+    label: "Fáscia",
+    description: "Tecido conjuntivo fascial",
+    speedOfSound_m_per_s: 1620,
+    acousticImpedance_MRayl: 1.68,
+    attenuation_dB_per_cm_MHz: 1.8,
+    baseEchogenicity: "hyperechoic",
+  },
   generic_soft: {
     id: "generic_soft",
     label: "Tecido Mole Genérico",
