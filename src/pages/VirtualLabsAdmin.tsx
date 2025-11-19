@@ -276,17 +276,49 @@ export default function VirtualLabsAdmin() {
 
       {/* Test Lab Dialog */}
       <Dialog open={testDialogOpen} onOpenChange={setTestDialogOpen}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Testar Laboratório: {labToTest?.name}</DialogTitle>
             <DialogDescription>
-              {labToTest?.description || "Pré-visualização do laboratório virtual"}
+              {labToTest?.description || "Pré-visualização completa com todos os controles habilitados"}
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
             {labToTest?.lab_type === "ultrasound" && (
               <UltrasoundSimulatorAdvanced
-                config={labToTest.config_data as any}
+                config={{
+                  ...(labToTest.config_data as any),
+                  // Force all controls visible for admin testing
+                  showGain: true,
+                  showDepth: true,
+                  showFrequency: true,
+                  showFocus: true,
+                  showTGC: true,
+                  showDynamicRange: true,
+                  showTransducerSelector: true,
+                  showModeSelector: true,
+                  // Unlock all parameters
+                  lockGain: false,
+                  lockDepth: false,
+                  lockFrequency: false,
+                  lockTransducer: false,
+                  // Enable all simulation features
+                  simulationFeatures: {
+                    showStructuralBMode: true,
+                    showBeamOverlay: true,
+                    showDepthScale: true,
+                    showFocusMarker: true,
+                    showPhysicsPanel: true,
+                    enablePosteriorEnhancement: true,
+                    enableAcousticShadow: true,
+                    enableReverberation: true,
+                    enableNearFieldClutter: true,
+                    showFieldLines: true,
+                    showAttenuationMap: true,
+                    enableColorDoppler: true,
+                    showAnatomyLabels: true,
+                  }
+                }}
                 title={labToTest.name}
                 description={labToTest.description || ""}
               />
