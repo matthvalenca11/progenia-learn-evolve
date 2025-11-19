@@ -1,5 +1,19 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User, Session } from "@supabase/supabase-js";
+
+interface AuthContextType {
+  user: User | null;
+  session: Session | null;
+  loading: boolean;
+  isAdmin: boolean;
+  userRole: "aluno" | "instrutor" | "admin" | null;
+  profile: any;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (data: { email: string; password: string; full_name: string; institution?: string }) => Promise<void>;
+  signOut: () => Promise<void>;
+  updateProfile: (updates: any) => Promise<void>;
+  refreshProfile: () => Promise<void>;
+}
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
 
@@ -19,7 +33,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
