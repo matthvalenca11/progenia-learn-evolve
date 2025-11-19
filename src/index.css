@@ -41,30 +41,6 @@ All colors MUST be HSL.
 
     --radius: 0.75rem;
 
-    /* Mobile-first spacing tokens */
-    --space-xs: 0.5rem;     /* 8px */
-    --space-sm: 0.75rem;    /* 12px */
-    --space-md: 1rem;       /* 16px */
-    --space-lg: 1.5rem;     /* 24px */
-    --space-xl: 2rem;       /* 32px */
-    --space-2xl: 3rem;      /* 48px */
-    
-    /* Touch target sizes (iOS/Android guidelines) */
-    --touch-target-min: 44px;
-    --touch-target-comfortable: 48px;
-    
-    /* Safe area insets for mobile */
-    --safe-area-top: env(safe-area-inset-top, 0px);
-    --safe-area-right: env(safe-area-inset-right, 0px);
-    --safe-area-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-left: env(safe-area-inset-left, 0px);
-    
-    /* Responsive container widths */
-    --container-mobile: 100%;
-    --container-tablet: 768px;
-    --container-desktop: 1024px;
-    --container-wide: 1280px;
-
     /* Custom Design Tokens */
     --gradient-primary: linear-gradient(135deg, hsl(204 82% 18%), hsl(204 82% 28%));
     --gradient-accent: linear-gradient(135deg, hsl(173 68% 42%), hsl(173 68% 52%));
@@ -141,51 +117,14 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     margin: 0;
     min-height: 100vh;
-    min-height: 100dvh; /* dynamic viewport height for mobile */
-    /* Safe areas for notch and home indicator */
-    padding-top: var(--safe-area-top);
-    padding-bottom: var(--safe-area-bottom);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    /* Prevent text size adjustment on orientation change */
-    -webkit-text-size-adjust: 100%;
-    /* Improve touch scrolling */
-    -webkit-overflow-scrolling: touch;
+    /* respeita notch e home indicator em iOS */
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold;
-  }
-  
-  /* Responsive typography scale */
-  h1 {
-    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
-  }
-  
-  h2 {
-    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl;
-  }
-  
-  h3 {
-    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
-  }
-  
-  h4 {
-    @apply text-base sm:text-lg md:text-xl;
-  }
-  
-  /* Touch-friendly interactive elements */
-  button, a, [role="button"] {
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
-  }
-  
-  /* Smooth scrolling for mobile */
-  * {
-    scroll-behavior: smooth;
   }
 }
 
@@ -217,79 +156,6 @@ All colors MUST be HSL.
 
   .transition-bounce {
     transition: var(--transition-bounce);
-  }
-  
-  /* Mobile-first utilities */
-  .safe-area-mobile {
-    padding-top: var(--safe-area-top);
-    padding-bottom: var(--safe-area-bottom);
-    padding-left: var(--safe-area-left);
-    padding-right: var(--safe-area-right);
-  }
-  
-  .container-mobile {
-    width: 100%;
-    margin-left: auto;
-    margin-right: auto;
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-  
-  @media (min-width: 640px) {
-    .container-mobile {
-      padding-left: 1.5rem;
-      padding-right: 1.5rem;
-    }
-  }
-  
-  @media (min-width: 768px) {
-    .container-mobile {
-      max-width: var(--container-tablet);
-      padding-left: 2rem;
-      padding-right: 2rem;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .container-mobile {
-      max-width: var(--container-desktop);
-    }
-  }
-  
-  @media (min-width: 1280px) {
-    .container-mobile {
-      max-width: var(--container-wide);
-    }
-  }
-  
-  /* Touch-friendly spacing */
-  .touch-target {
-    min-height: var(--touch-target-min);
-    min-width: var(--touch-target-min);
-  }
-  
-  .touch-target-comfortable {
-    min-height: var(--touch-target-comfortable);
-    min-width: var(--touch-target-comfortable);
-  }
-  
-  /* Prevent text selection on tap (for buttons/interactive elements) */
-  .no-tap-highlight {
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-  }
-  
-  /* Smooth scrolling container */
-  .smooth-scroll {
-    -webkit-overflow-scrolling: touch;
-    scroll-behavior: smooth;
-  }
-  
-  /* Sticky header with safe area */
-  .sticky-header-mobile {
-    position: sticky;
-    top: var(--safe-area-top);
-    z-index: 50;
   }
 }
 
