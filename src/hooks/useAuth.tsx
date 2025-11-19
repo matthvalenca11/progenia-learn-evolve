@@ -1,19 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User, Session } from "@supabase/supabase-js";
-
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  loading: boolean;
-  isAdmin: boolean;
-  userRole: "aluno" | "instrutor" | "admin" | null;
-  profile: any;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (data: { email: string; password: string; full_name: string; institution?: string }) => Promise<void>;
-  signOut: () => Promise<void>;
-  updateProfile: (updates: any) => Promise<void>;
-  refreshProfile: () => Promise<void>;
-}
 import { supabase } from "@/integrations/supabase/client";
 import { authService } from "@/services/authService";
 
