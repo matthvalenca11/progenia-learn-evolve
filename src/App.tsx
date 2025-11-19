@@ -19,6 +19,7 @@ import CapsulasGrid from "@/pages/CapsulasGrid";
 import CapsulaViewer from "@/pages/CapsulaViewer";
 import CapsulaBuilder from "@/components/admin/CapsulaBuilder";
 import VirtualLabEditor from "@/components/admin/VirtualLabEditor";
+import VirtualLabsAdmin from "@/pages/VirtualLabsAdmin";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const AppContent = () => {
           <Route path="/capsula/:capsulaId" element={<CapsulaViewer />} />
           <Route path="/admin/capsulas/novo/:moduleId" element={<CapsulaBuilder />} />
           <Route path="/admin/capsulas/editar/:capsulaId" element={<CapsulaBuilder />} />
+          <Route path="/admin/labs" element={<VirtualLabsAdmin />} />
           <Route path="/admin/labs/novo" element={<VirtualLabEditor />} />
           <Route path="/admin/labs/editar/:labId" element={<VirtualLabEditor />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
