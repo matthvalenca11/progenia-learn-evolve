@@ -178,6 +178,7 @@ export type Database = {
           titulo: string
           ultrasound_lab_config: Json | null
           updated_at: string
+          virtual_lab_id: string | null
           visual_path: string | null
         }
         Insert: {
@@ -196,6 +197,7 @@ export type Database = {
           titulo: string
           ultrasound_lab_config?: Json | null
           updated_at?: string
+          virtual_lab_id?: string | null
           visual_path?: string | null
         }
         Update: {
@@ -214,6 +216,7 @@ export type Database = {
           titulo?: string
           ultrasound_lab_config?: Json | null
           updated_at?: string
+          virtual_lab_id?: string | null
           visual_path?: string | null
         }
         Relationships: [
@@ -222,6 +225,13 @@ export type Database = {
             columns: ["modulo_id"]
             isOneToOne: false
             referencedRelation: "modules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capsulas_virtual_lab_id_fkey"
+            columns: ["virtual_lab_id"]
+            isOneToOne: false
+            referencedRelation: "virtual_labs"
             referencedColumns: ["id"]
           },
         ]
