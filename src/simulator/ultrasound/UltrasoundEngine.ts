@@ -182,7 +182,7 @@ export class UltrasoundEngine {
         float currentDepth = 0.0;
         vec2 pos = origin;
         
-        // Ray marching loop
+      // Ray marching loop
         for (int step = 0; step < MAX_STEPS; step++) {
           pos += direction * STEP_SIZE;
           currentDepth = length(pos - origin) * depth;
@@ -198,11 +198,11 @@ export class UltrasoundEngine {
           float focalFactor = 1.0 - abs(currentDepth - focus) / focus;
           focalFactor = max(0.0, focalFactor);
           
-          // Base tissue reflectivity (simplified - would read from layers in full implementation)
+          // Base tissue reflectivity
           float layerReflectivity = 0.3 + 0.2 * sin(currentDepth * 3.0);
           
-          // Speckle noise
-          vec2 noiseCoord = pos * 50.0 + vec2(t * 0.1, 0.0);
+          // Speckle noise with Rayleigh distribution
+          vec2 noiseCoord = pos * 50.0 + vec2(time * 0.1, 0.0);
           float speckle = fbm(noiseCoord);
           speckle = rayleigh(speckle, 0.4);
           
@@ -343,7 +343,7 @@ export class UltrasoundEngine {
   }
   
   /**
-   * Canvas 2D fallback rendering path
+   * Canvas 2D fallback rendering path with Doppler support
    */
   private renderCanvas2D(): void {
     if (!this.ctx2d) return;
@@ -356,7 +356,7 @@ export class UltrasoundEngine {
     
     const data = this.frameBuffer.data;
     
-    // Simplified ray marching in software
+    // Render B-mode base image
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
         const uv = { x: x / width, y: y / height };
@@ -372,26 +372,264 @@ export class UltrasoundEngine {
     }
     
     this.ctx2d.putImageData(this.frameBuffer, 0, 0);
+    
+    // Render Doppler overlay if enabled
+    if (this.config.mode === 'color-doppler' && this.config.features.enableColorDoppler) {
+      this.renderDopplerOverlay();
+    }
+    
     this.drawOverlays();
   }
   
   /**
-   * Software ray marching (fallback)
+   * Render Color Doppler overlay on top of B-mode
+   */
+  private renderDopplerOverlay(): void {
+    if (!this.ctx2d) return;
+    
+    const { width, height } = this.canvas;
+    
+    // Find all vessel inclusions
+    const vessels = this.config.inclusions.filter(inc => inc.type === 'vessel');
+    if (vessels.length === 0) return;
+    
+    // Create Doppler overlay
+    for (const vessel of vessels) {
+      this.ctx2d.save();
+      
+      // Convert vessel position to screen coords
+      const centerX = ((vessel.centerLateralPos + 1) / 2) * width;
+      const centerY = (vessel.centerDepthCm / this.config.depth) * height;
+      const radiusX = (vessel.sizeCm.width / 2 / this.config.depth) * height;
+      const radiusY = (vessel.sizeCm.height / 2 / this.config.depth) * height;
+      
+      // Draw flow field inside vessel
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const uv = { x: x / width, y: y / height };
+          const depth = uv.y * this.config.depth;
+          const lateralPos = (uv.x - 0.5) * 2;
+          
+          // Check if inside vessel
+          const dx = (lateralPos - vessel.centerLateralPos) / (vessel.sizeCm.width / 2);
+          const dy = (depth - vessel.centerDepthCm) / (vessel.sizeCm.height / 2);
+          const inVessel = dx * dx + dy * dy <= 1;
+          
+          if (inVessel) {
+            // Calculate laminar flow velocity (parabolic profile)
+            const distFromCenter = Math.sqrt(dx * dx + dy * dy);
+            const velocity = (1 - distFromCenter * distFromCenter) * 0.5; // Max 0.5 m/s
+            
+            // Add temporal variation
+            const flowPhase = this.config.time * 2 + lateralPos * 3;
+            const velocityWithPulse = velocity * (1 + 0.2 * Math.sin(flowPhase));
+            
+            // Color mapping: red = toward probe, blue = away
+            const flowDirection = Math.sin(lateralPos * Math.PI); // Varies by position
+            const colorVelocity = velocityWithPulse * flowDirection;
+            
+            // Map to color
+            let r = 0, g = 0, b = 0;
+            if (colorVelocity > 0) {
+              // Flow toward probe (red)
+              r = Math.floor(Math.min(255, colorVelocity * 512));
+              g = 0;
+              b = 0;
+            } else {
+              // Flow away from probe (blue)
+              r = 0;
+              g = 0;
+              b = Math.floor(Math.min(255, -colorVelocity * 512));
+            }
+            
+            // Add noise for realism
+            const noise = this.noise2D(x * 0.1, y * 0.1 + this.config.time);
+            const alpha = Math.max(0.3, 0.6 + noise * 0.2);
+            
+            // Blend with B-mode
+            this.ctx2d.fillStyle = `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            this.ctx2d.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+      
+      this.ctx2d.restore();
+    }
+  }
+  
+  /**
+   * Software ray marching (fallback) with inclusion and Doppler support
    */
   private raymarchSoftware(uv: { x: number; y: number }): RayMarchResult {
-    // Simplified version - full implementation would be much more complex
     const depth = uv.y * this.config.depth;
-    const attenuation = Math.exp(-this.config.frequency * 0.5 * depth);
-    const speckle = this.noise2D(uv.x * 50, uv.y * 50 + this.config.time * 0.1);
-    const intensity = attenuation * speckle * this.config.gain * 0.01;
+    const lateralPos = (uv.x - 0.5) * 2; // -1 to 1
+    
+    // Check if inside any inclusion
+    const inclusion = this.getInclusionAtPoint(lateralPos, depth);
+    
+    // Base tissue properties
+    let baseReflectivity = 0.3;
+    let attenuation = Math.exp(-this.config.frequency * 0.5 * depth);
+    let speckle = this.noise2D(uv.x * 50, uv.y * 50 + this.config.time * 0.1);
+    
+    // Apply inclusion effects
+    if (inclusion) {
+      const effects = this.calculateInclusionEffects(inclusion, lateralPos, depth, uv);
+      baseReflectivity = effects.reflectivity;
+      attenuation *= effects.attenuationMod;
+      speckle *= effects.speckleMod;
+    }
+    
+    // Check for acoustic shadow from inclusions above
+    const shadowFactor = this.calculateAcousticShadow(lateralPos, depth);
+    attenuation *= shadowFactor;
+    
+    // Check for posterior enhancement from inclusions above
+    const enhancementFactor = this.calculatePosteriorEnhancement(lateralPos, depth);
+    
+    // Focal zone enhancement
+    const focalFactor = 1.0 - Math.abs(depth - this.config.focus) / this.config.focus;
+    const focalGain = Math.max(0, focalFactor) * 0.3 + 1.0;
+    
+    let intensity = baseReflectivity * attenuation * speckle * this.config.gain * 0.01 * focalGain * enhancementFactor;
     
     return {
-      intensity: Math.min(intensity, 1.0),
+      intensity: Math.min(Math.max(intensity, 0), 1.0),
       depth,
-      mediumId: 'muscle',
+      mediumId: inclusion?.mediumInsideId || 'muscle',
       reflections: 0,
       attenuation,
     };
+  }
+  
+  private getInclusionAtPoint(lateralPos: number, depth: number): UltrasoundInclusionConfig | null {
+    for (const inc of this.config.inclusions) {
+      const inLateral = Math.abs(lateralPos - inc.centerLateralPos) <= inc.sizeCm.width / 2;
+      const inDepth = Math.abs(depth - inc.centerDepthCm) <= inc.sizeCm.height / 2;
+      
+      if (inc.shape === 'circle') {
+        const dx = lateralPos - inc.centerLateralPos;
+        const dy = depth - inc.centerDepthCm;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist <= inc.sizeCm.width / 2) return inc;
+      } else if (inc.shape === 'ellipse') {
+        const dx = (lateralPos - inc.centerLateralPos) / (inc.sizeCm.width / 2);
+        const dy = (depth - inc.centerDepthCm) / (inc.sizeCm.height / 2);
+        if (dx * dx + dy * dy <= 1) return inc;
+      } else if (inc.shape === 'rectangle') {
+        if (inLateral && inDepth) return inc;
+      }
+    }
+    return null;
+  }
+  
+  private calculateInclusionEffects(
+    inclusion: UltrasoundInclusionConfig,
+    lateralPos: number,
+    depth: number,
+    uv: { x: number; y: number }
+  ) {
+    let reflectivity = 0.3;
+    let attenuationMod = 1.0;
+    let speckleMod = 1.0;
+    
+    // Distance to center
+    const dx = lateralPos - inclusion.centerLateralPos;
+    const dy = depth - inclusion.centerDepthCm;
+    const distToCenter = Math.sqrt(dx * dx + dy * dy);
+    const maxRadius = Math.max(inclusion.sizeCm.width, inclusion.sizeCm.height) / 2;
+    const edgeDist = maxRadius - distToCenter;
+    const isNearEdge = edgeDist < 0.1; // within 1mm of edge
+    
+    switch (inclusion.type) {
+      case 'cyst':
+        // Anechoic interior
+        reflectivity = 0.05;
+        speckleMod = 0.1;
+        // Bright border
+        if (isNearEdge && inclusion.borderEchogenicity === 'sharp') {
+          reflectivity = 0.8;
+          speckleMod = 1.5;
+        }
+        break;
+        
+      case 'vessel':
+        // Anechoic lumen
+        reflectivity = 0.03;
+        speckleMod = 0.05;
+        // Thin hyperechoic wall
+        if (isNearEdge) {
+          reflectivity = 0.7;
+          speckleMod = 1.2;
+        }
+        break;
+        
+      case 'bone_surface':
+      case 'calcification':
+        // Very bright interface
+        reflectivity = 1.0;
+        speckleMod = 2.0;
+        attenuationMod = 0.1; // Strong attenuation inside
+        break;
+        
+      case 'solid_mass':
+        // Hypoechoic or hyperechoic depending on medium
+        reflectivity = 0.4;
+        speckleMod = 0.8;
+        break;
+        
+      case 'heterogeneous_lesion':
+        // Variable echogenicity
+        const heteroNoise = this.noise2D(uv.x * 100, uv.y * 100);
+        reflectivity = 0.3 + heteroNoise * 0.3;
+        speckleMod = 0.8 + heteroNoise * 0.4;
+        break;
+    }
+    
+    return { reflectivity, attenuationMod, speckleMod };
+  }
+  
+  private calculateAcousticShadow(lateralPos: number, depth: number): number {
+    if (!this.config.features.enableAcousticShadow) return 1.0;
+    
+    let shadowFactor = 1.0;
+    
+    for (const inc of this.config.inclusions) {
+      if (!inc.hasStrongShadow) continue;
+      if (depth <= inc.centerDepthCm) continue; // Only shadow below inclusion
+      
+      // Check if in shadow column
+      const inShadowColumn = Math.abs(lateralPos - inc.centerLateralPos) <= inc.sizeCm.width / 2;
+      if (inShadowColumn) {
+        const depthBelowInc = depth - (inc.centerDepthCm + inc.sizeCm.height / 2);
+        const shadowStrength = Math.exp(-depthBelowInc * 2); // Exponential decay
+        shadowFactor *= Math.max(0.1, 1.0 - shadowStrength * 0.9);
+      }
+    }
+    
+    return shadowFactor;
+  }
+  
+  private calculatePosteriorEnhancement(lateralPos: number, depth: number): number {
+    if (!this.config.features.enablePosteriorEnhancement) return 1.0;
+    
+    let enhancement = 1.0;
+    
+    for (const inc of this.config.inclusions) {
+      if (!inc.posteriorEnhancement) continue;
+      if (depth <= inc.centerDepthCm) continue; // Only enhance below inclusion
+      
+      // Check if in enhancement column
+      const inEnhancementColumn = Math.abs(lateralPos - inc.centerLateralPos) <= inc.sizeCm.width / 2;
+      if (inEnhancementColumn) {
+        const depthBelowInc = depth - (inc.centerDepthCm + inc.sizeCm.height / 2);
+        // Gradual enhancement that fades with distance
+        const enhancementStrength = Math.exp(-depthBelowInc * 1.5);
+        enhancement *= 1.0 + enhancementStrength * 0.5; // Up to +50% gain
+      }
+    }
+    
+    return enhancement;
   }
   
   private noise2D(x: number, y: number): number {

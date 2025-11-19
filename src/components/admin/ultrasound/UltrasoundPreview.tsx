@@ -83,7 +83,14 @@ export const UltrasoundPreview = () => {
   const getTransducerLabel = () => {
     if (transducerType === 'linear') return 'LINEAR';
     if (transducerType === 'convex') return 'CONVEXO';
-    return 'MICROCONVEXO';
+    if (transducerType === 'microconvex') return 'MICROCONVEXO';
+    return 'LINEAR';
+  };
+  
+  const getModeLabel = () => {
+    if (mode === 'b-mode') return 'MODO B';
+    if (mode === 'color-doppler') return 'DOPPLER COLOR';
+    return 'MODO B';
   };
   
   return (
@@ -101,7 +108,7 @@ export const UltrasoundPreview = () => {
           </div>
           <div className="flex gap-2">
             <Badge variant="outline">{getTransducerLabel()}</Badge>
-            <Badge variant="outline">{mode === 'b-mode' ? 'MODO B' : 'DOPPLER COLOR'}</Badge>
+            <Badge variant="outline">{getModeLabel()}</Badge>
           </div>
         </div>
       </CardHeader>
