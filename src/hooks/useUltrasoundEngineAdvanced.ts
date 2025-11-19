@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { UltrasoundPhysicsParams, AnatomyLayer } from '@/types/ultrasoundAdvanced';
 
 /**
- * Noise functions for speckle generation
+ * Enhanced noise functions for realistic speckle generation
  */
 function noise2D(x: number, y: number, seed: number = 0): number {
   const n = Math.sin(x * 12.9898 + y * 78.233 + seed) * 43758.5453;
@@ -26,6 +26,29 @@ function multiOctaveNoise(x: number, y: number, octaves: number, seed: number): 
 }
 
 /**
+ * Perlin-like smooth noise for organic textures
+ */
+function smoothNoise(x: number, y: number): number {
+  const x0 = Math.floor(x);
+  const x1 = x0 + 1;
+  const y0 = Math.floor(y);
+  const y1 = y0 + 1;
+  
+  const sx = x - x0;
+  const sy = y - y0;
+  
+  const n00 = noise2D(x0, y0);
+  const n10 = noise2D(x1, y0);
+  const n01 = noise2D(x0, y1);
+  const n11 = noise2D(x1, y1);
+  
+  const nx0 = n00 * (1 - sx) + n10 * sx;
+  const nx1 = n01 * (1 - sx) + n11 * sx;
+  
+  return nx0 * (1 - sy) + nx1 * sy;
+}
+
+/**
  * Rayleigh distribution for realistic speckle
  */
 function rayleighNoise(sigma: number = 0.5): number {
@@ -35,13 +58,14 @@ function rayleighNoise(sigma: number = 0.5): number {
 }
 
 /**
- * Generate velocity field for Doppler
+ * Enhanced velocity field generator for realistic Doppler
  */
 function generateVelocityField(
   width: number,
   height: number,
   layers: AnatomyLayer[],
-  depthCm: number
+  depthCm: number,
+  time: number
 ): Float32Array {
   const velocityField = new Float32Array(width * height * 2); // vx, vy
   
@@ -60,15 +84,23 @@ function generateVelocityField(
         const lateralRatio = (x - width / 2) / width;
         const idx = (y * width + x) * 2;
         
-        // Parabolic flow profile (laminar)
+        // Parabolic flow profile (laminar) with pulsation
         const distFromCenter = Math.abs(lateralRatio * 4);
-        const profile = Math.max(0, 1 - distFromCenter * distFromCenter);
+        const radialProfile = Math.max(0, 1 - distFromCenter * distFromCenter);
+        
+        // Add pulsatile component (simulates cardiac cycle)
+        const pulsation = 0.85 + 0.15 * Math.sin(time * 3.0);
+        
+        // Add turbulence at edges
+        const turbulence = distFromCenter > 0.7 ? 
+          (Math.random() - 0.5) * 0.2 : 0;
         
         // Velocity in cm/s
-        const velocity = layer.flowVelocity * profile;
+        const baseVelocity = layer.flowVelocity * radialProfile * pulsation;
+        const velocity = baseVelocity + turbulence;
         
-        velocityField[idx] = velocity * 0.7; // vx (mostly axial)
-        velocityField[idx + 1] = velocity * 0.3; // vy (some lateral)
+        velocityField[idx] = velocity * 0.866; // vx (mostly axial, cos 30°)
+        velocityField[idx + 1] = velocity * 0.5; // vy (some lateral, sin 30°)
       }
     }
   }
@@ -101,7 +133,7 @@ function generateAdvancedUltrasoundFrame(
   
   // Generate velocity field for Doppler modes
   const velocityField = (mode === 'color-doppler') 
-    ? generateVelocityField(width, height, layers, maxDepthCm)
+    ? generateVelocityField(width, height, layers, maxDepthCm, time)
     : null;
 
   // Simple beam simulation
@@ -171,23 +203,35 @@ function generateAdvancedUltrasoundFrame(
       // Blur away from focus
       const blurFactor = 1.0 - 0.25 * Math.min(distanceFromFocus / 2, 1);
 
-      // Multi-scale Rayleigh-distributed speckle
-      const noiseScale = 0.025 * frequency;
+      // Enhanced multi-scale Rayleigh-distributed speckle
+      const noiseScale = 0.02 + 0.03 * (frequency / 15); // Frequency-dependent grain
+      
+      // Three octaves for realistic texture
       const fineSpeckle = multiOctaveNoise(
-        x * noiseScale + time * 0.006,
-        y * noiseScale + time * 0.009,
-        5,
+        x * noiseScale * 2 + time * 0.008,
+        y * noiseScale * 2 + time * 0.012,
+        6,
         12345
       );
-      const mediumSpeckle = multiOctaveNoise(
-        x * noiseScale * 0.4 + time * 0.004,
-        y * noiseScale * 0.4 + time * 0.006,
-        3,
+      const mediumSpeckle = smoothNoise(
+        x * noiseScale * 0.5 + time * 0.005,
+        y * noiseScale * 0.5 + time * 0.007
+      );
+      const coarseSpeckle = multiOctaveNoise(
+        x * noiseScale * 0.15 + time * 0.003,
+        y * noiseScale * 0.15 + time * 0.004,
+        2,
         54321
       );
-      const rayleighMod = rayleighNoise(0.35);
-      const speckleBase = (fineSpeckle * 0.65 + mediumSpeckle * 0.35);
-      const speckleNoise = speckleBase * (0.6 + 0.4 * rayleighMod);
+      
+      // Rayleigh distribution for realistic amplitude
+      const rayleighMod = rayleighNoise(0.4);
+      const speckleBase = (
+        fineSpeckle * 0.55 + 
+        mediumSpeckle * 0.30 + 
+        coarseSpeckle * 0.15
+      );
+      const speckleNoise = speckleBase * (0.5 + 0.5 * rayleighMod);
 
       // Find current anatomical layer
       const currentLayer = layers.find(l => {
@@ -290,28 +334,41 @@ function generateAdvancedUltrasoundFrame(
         const vy = velocityField[velIdx + 1];
         const velocity = Math.sqrt(vx * vx + vy * vy);
         
-        if (velocity > 0.5) {
-          // Doppler shift calculation (simplified)
-          const dopplerShift = (2 * frequency * 1e6 * velocity) / 1540; // Hz
-          const aliasThreshold = 2000; // PRF threshold
-          const normalized = (dopplerShift / aliasThreshold);
+        if (velocity > 0.8) {
+          // Enhanced Doppler shift calculation
+          const dopplerShift = (2 * frequency * 1e6 * velocity * Math.cos(Math.PI / 6)) / 1540; // Hz with angle
+          const prf = 3000 + frequency * 200; // PRF varies with frequency
+          const nyquistVel = (prf * 1540) / (4 * frequency * 1e6); // Nyquist limit
+          const normalized = velocity / nyquistVel;
           
-          // Aliasing
-          const wrappedVel = ((normalized + 1) % 2) - 1;
+          // Aliasing with wrapping
+          let wrappedVel = normalized;
+          if (Math.abs(wrappedVel) > 1) {
+            wrappedVel = ((wrappedVel + 1) % 2) - 1;
+          }
           
-          // Color mapping: red = toward, blue = away
+          // Add Doppler noise
+          const dopplerNoise = (Math.random() - 0.5) * 0.15;
+          wrappedVel += dopplerNoise;
+          
+          // Enhanced color mapping with saturation
+          const saturation = Math.min(1, Math.abs(wrappedVel) * 1.2);
+          const brightness = 0.6 + 0.4 * saturation;
+          
           if (wrappedVel > 0) {
-            data[idx] = Math.min(255, 100 + wrappedVel * 155);
-            data[idx + 1] = Math.min(255, 20 + wrappedVel * 60);
+            // Toward probe - RED spectrum
+            data[idx] = Math.min(255, 80 + wrappedVel * 175 * brightness);
+            data[idx + 1] = Math.min(255, 10 + wrappedVel * 45 * brightness);
             data[idx + 2] = 0;
           } else {
+            // Away from probe - BLUE spectrum
             data[idx] = 0;
-            data[idx + 1] = Math.min(255, 20 - wrappedVel * 60);
-            data[idx + 2] = Math.min(255, 100 - wrappedVel * 155);
+            data[idx + 1] = Math.min(255, 10 - wrappedVel * 45 * brightness);
+            data[idx + 2] = Math.min(255, 80 - wrappedVel * 175 * brightness);
           }
-          data[idx + 3] = Math.min(255, Math.abs(wrappedVel) * 220);
+          data[idx + 3] = Math.min(255, saturation * 240);
         } else {
-          // No flow - show grayscale B-mode
+          // No significant flow - show B-mode with slight transparency
           const pixelValue = Math.floor(Math.max(0, Math.min(1, intensity)) * 255);
           data[idx] = pixelValue;
           data[idx + 1] = pixelValue;
@@ -348,27 +405,39 @@ export function useUltrasoundEngineAdvanced(
 ) {
   const animationFrameRef = useRef<number>();
   const startTimeRef = useRef<number>(Date.now());
+  const lastRenderRef = useRef<number>(0);
+  const targetFPS = 30; // Limit to 30 FPS for better performance
+  const frameInterval = 1000 / targetFPS;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || !isActive) return;
 
-    const ctx = canvas.getContext('2d', { alpha: false });
+    const ctx = canvas.getContext('2d', { 
+      alpha: false,
+      desynchronized: true, // Improve performance
+      willReadFrequently: false
+    });
     if (!ctx) return;
 
-    // Animation loop
-    const animate = () => {
-      const elapsed = (Date.now() - startTimeRef.current) / 1000;
+    // Throttled animation loop for better performance
+    const animate = (timestamp: number) => {
+      const elapsed = timestamp - lastRenderRef.current;
       
-      generateAdvancedUltrasoundFrame(ctx, {
-        ...params,
-        time: elapsed,
-      }, layers);
+      if (elapsed >= frameInterval) {
+        lastRenderRef.current = timestamp - (elapsed % frameInterval);
+        const time = (Date.now() - startTimeRef.current) / 1000;
+        
+        generateAdvancedUltrasoundFrame(ctx, {
+          ...params,
+          time,
+        }, layers);
+      }
 
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animate();
+    animationFrameRef.current = requestAnimationFrame(animate);
 
     return () => {
       if (animationFrameRef.current) {
