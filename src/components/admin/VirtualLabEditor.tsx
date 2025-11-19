@@ -690,7 +690,7 @@ export default function VirtualLabEditor() {
         </div>
 
         {/* Live Preview Panel */}
-        <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
+        <div className="space-y-6 lg:sticky lg:top-6 lg:self-start lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
           <Card>
             <CardHeader>
               <CardTitle>Pré-visualização</CardTitle>
