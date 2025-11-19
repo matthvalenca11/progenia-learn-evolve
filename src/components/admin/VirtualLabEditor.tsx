@@ -284,9 +284,9 @@ export default function VirtualLabEditor() {
         </Button>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Editor Panel */}
-        <div className="space-y-6">
+      <div className="grid lg:grid-cols-2 gap-6 lg:h-[calc(100vh-12rem)]">
+        {/* Editor Panel - Scrollable */}
+        <div className="space-y-6 lg:overflow-y-auto lg:pr-4 lg:max-h-full">
           {/* Basic Info */}
           <Card>
             <CardHeader>
@@ -689,8 +689,8 @@ export default function VirtualLabEditor() {
           )}
         </div>
 
-        {/* Live Preview Panel */}
-        <div className="space-y-6 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+        {/* Live Preview Panel - Fixed */}
+        <div className="space-y-6 lg:sticky lg:top-0 lg:h-[calc(100vh-12rem)] lg:overflow-y-auto">
           <Card>
             <CardHeader>
               <CardTitle>Pré-visualização</CardTitle>
