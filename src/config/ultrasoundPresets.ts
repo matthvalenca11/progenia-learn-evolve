@@ -17,6 +17,15 @@ import { UltrasoundLayerConfig, UltrasoundInclusionConfig } from "@/types/acoust
 export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): UltrasoundLayerConfig[] {
   const layerSets: Record<UltrasoundAnatomyPresetId, UltrasoundLayerConfig[]> = {
     // ============================================================
+    // CUSTOM - Configuração manual de camadas
+    // ============================================================
+    custom: [
+      { id: "skin", mediumId: "skin", name: "Pele", thicknessCm: 0.2, noiseScale: 1.4, reflectivityBias: 0.08 },
+      { id: "subcut", mediumId: "fat", name: "Subcutâneo", thicknessCm: 0.5, noiseScale: 0.75, reflectivityBias: -0.18 },
+      { id: "muscle", mediumId: "muscle", name: "Músculo", thicknessCm: 2.0, noiseScale: 1.1, reflectivityBias: 0 },
+    ],
+    
+    // ============================================================
     // TENDÃO SUPERFICIAL - Estrutura fibrilar com padrão estriado
     // ============================================================
     msk_tendon_upper_limb: [
@@ -113,6 +122,7 @@ export function getDefaultLayersForPreset(presetId: UltrasoundAnatomyPresetId): 
 
 export function getDefaultInclusionsForPreset(presetId: UltrasoundAnatomyPresetId): UltrasoundInclusionConfig[] {
   const inclusionSets: Record<UltrasoundAnatomyPresetId, UltrasoundInclusionConfig[]> = {
+    custom: [],
     msk_tendon_upper_limb: [],
     shoulder_supraspinatus_long: [],
     muscle_generic: [],
@@ -161,6 +171,28 @@ export function getDefaultInclusionsForPreset(presetId: UltrasoundAnatomyPresetI
  * ULTRASOUND ANATOMY PRESETS - COMPLETE DEFINITIONS
  */
 export const ULTRASOUND_PRESETS: Record<UltrasoundAnatomyPresetId, UltrasoundAnatomyPreset> = {
+  // ===========================
+  // CUSTOM - CONFIGURAÇÃO MANUAL
+  // ===========================
+  custom: {
+    id: "custom",
+    label: "Personalizado",
+    shortDescription: "Configure manualmente todas as camadas e inclusões",
+    clinicalTagline: "Composição de tecidos totalmente customizável para seus objetivos pedagógicos",
+    transducerType: "linear",
+    recommendedFrequencyMHz: 7.5,
+    recommendedDepthCm: 4.0,
+    recommendedFocusCm: 2.0,
+    recommendedGain: 50,
+    tissueProfile: "muscle",
+    vesselCount: 0,
+    hasBoneInterface: false,
+    hasStrongShadow: false,
+    noiseSeed: 0,
+    speckleIntensity: 1.0,
+    layerBrightness: [1.0, 1.0, 1.0],
+  },
+  
   // ===========================
   // LINEAR TRANSDUCER PRESETS
   // ===========================

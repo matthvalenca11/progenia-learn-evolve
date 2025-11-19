@@ -32,7 +32,7 @@ export default function VirtualLabEditor() {
     lab_type: "ultrasound",
     config_data: {
       ultrasoundConfig: {
-        presetId: "muscle_generic",
+        presetId: "custom",
         controls: {
           showGain: true,
           showDepth: true,
@@ -48,12 +48,36 @@ export default function VirtualLabEditor() {
   });
 
   const allPresets = getAllPresets();
+  
+  const ultrasoundStore = useUltrasoundLabStore();
 
   useEffect(() => {
     if (isEdit && labId) {
       loadLab();
     }
   }, [labId, isEdit]);
+  
+  // Sync lab config with ultrasound store for preview (basic parameters only)
+  useEffect(() => {
+    if (lab.config_data.ultrasoundConfig) {
+      const config = lab.config_data.ultrasoundConfig;
+      
+      ultrasoundStore.setPresetId(config.presetId);
+      
+      // Sync simulation features
+      if (config.simulationFeatures) {
+        ultrasoundStore.setSimulationFeatures(config.simulationFeatures);
+      }
+      
+      if (config.complexityLevel) {
+        ultrasoundStore.setComplexityLevel(config.complexityLevel);
+      }
+    }
+  }, [
+    lab.config_data.ultrasoundConfig?.presetId,
+    lab.config_data.ultrasoundConfig?.simulationFeatures,
+    lab.config_data.ultrasoundConfig?.complexityLevel,
+  ]);
 
   const loadLab = async () => {
     try {
@@ -133,6 +157,8 @@ export default function VirtualLabEditor() {
     if (!ultrasoundConfig) return;
     
     const newPreset = allPresets.find(p => p.id === presetId);
+    const newLayers = getDefaultLayersForPreset(presetId as any);
+    const newInclusions = getDefaultInclusionsForPreset(presetId as any);
     
     setLab({
       ...lab,
@@ -141,13 +167,23 @@ export default function VirtualLabEditor() {
         ultrasoundConfig: {
           ...ultrasoundConfig,
           presetId: presetId as any,
-          layers: getDefaultLayersForPreset(presetId as any),
-          inclusions: getDefaultInclusionsForPreset(presetId as any),
+          layers: newLayers,
+          inclusions: newInclusions,
         },
       },
     });
     
+    // Sync basic parameters with ultrasound store for preview
+    ultrasoundStore.setPresetId(presetId as any);
+    
     if (newPreset) {
+      // Update transducer and imaging parameters
+      ultrasoundStore.setTransducerType(newPreset.transducerType);
+      ultrasoundStore.setFrequency(newPreset.recommendedFrequencyMHz);
+      ultrasoundStore.setDepth(newPreset.recommendedDepthCm);
+      ultrasoundStore.setFocus(newPreset.recommendedFocusCm);
+      ultrasoundStore.setGain(newPreset.recommendedGain);
+      
       toast.info("Preset alterado", { 
         description: `Camadas redefinidas. Transdutor recomendado: ${
           newPreset.transducerType === 'linear' ? 'Linear' : 
@@ -156,7 +192,7 @@ export default function VirtualLabEditor() {
         } (${newPreset.recommendedFrequencyMHz} MHz)` 
       });
     }
-  }, [lab, ultrasoundConfig, allPresets]);
+  }, [lab, ultrasoundConfig, allPresets, ultrasoundStore]);
 
   // Memoize simulator config to prevent unnecessary re-renders
   const simulatorConfig = useMemo(() => {
