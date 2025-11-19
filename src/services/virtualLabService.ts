@@ -21,9 +21,10 @@ export type UltrasoundLabConfig = {
 
 export type VirtualLab = {
   id?: string;
-  name: string;
+  name?: string;
   description?: string;
   lab_type: VirtualLabType;
+  lesson_id?: string | null;
   config_data: {
     ultrasoundConfig?: UltrasoundLabConfig;
     // Future: electrotherapyConfig, thermalConfig, etc.
@@ -43,7 +44,7 @@ export const virtualLabService = {
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as VirtualLab[];
   },
 
   /**
@@ -54,10 +55,10 @@ export const virtualLabService = {
       .from("virtual_labs")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
-    return data;
+    return data as VirtualLab | null;
   },
 
   /**
@@ -68,10 +69,10 @@ export const virtualLabService = {
       .from("virtual_labs")
       .select("*")
       .eq("lab_type", type)
-      .order("name");
+      .order("created_at", { ascending: false });
 
     if (error) throw error;
-    return data || [];
+    return (data || []) as VirtualLab[];
   },
 
   /**
