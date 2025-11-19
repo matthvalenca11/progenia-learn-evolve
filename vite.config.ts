@@ -4,13 +4,25 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import fs from "fs";
 
-// Force clean cache on startup
-const cacheDir = path.resolve(__dirname, "node_modules/.vite");
-if (fs.existsSync(cacheDir)) {
-  console.log("🧹 Cleaning Vite cache...");
-  fs.rmSync(cacheDir, { recursive: true, force: true });
-  console.log("✅ Cache cleared!");
-}
+// AGGRESSIVE CACHE CLEANING - Force clean ALL possible cache directories
+const cleanCache = () => {
+  const cacheDirs = [
+    path.resolve(__dirname, "node_modules/.vite"),
+    path.resolve(__dirname, "node_modules/.vite-fresh"),
+    path.resolve(__dirname, ".vite"),
+    path.resolve(__dirname, "dist"),
+  ];
+  
+  cacheDirs.forEach(dir => {
+    if (fs.existsSync(dir)) {
+      console.log(`🧹 Cleaning ${dir}...`);
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  console.log("✅ All caches cleared!");
+};
+
+cleanCache();
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
