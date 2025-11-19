@@ -113,17 +113,21 @@ export const UltrasoundSimulator = ({
       <div className="grid lg:grid-cols-[2fr,1fr] gap-6">
         {/* LEFT: Ultrasound Console View */}
         <div className="space-y-4">
-          {/* Main ultrasound screen */}
-          <Card className="bg-slate-950 border-slate-800 p-4">
-            <div className="relative bg-slate-900/50 rounded-lg overflow-hidden border border-slate-700">
-              {/* Probe head */}
+          {/* Main ultrasound screen with console-like bezel */}
+          <Card className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 border-slate-700 p-6 shadow-2xl">
+            <div className="relative bg-black/90 rounded-xl overflow-hidden border-4 border-slate-800 shadow-[inset_0_2px_8px_rgba(0,0,0,0.8)]">
+              {/* Probe head - more realistic */}
               <div
-                className="absolute -top-4 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
-                style={{ width: "120px" }}
+                className="absolute -top-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center"
+                style={{ width: "100px" }}
               >
-                <div className="w-3 h-3 bg-slate-300 rounded-full" />
-                <div className="w-20 h-6 bg-gradient-to-b from-slate-200 to-slate-300 rounded-b-2xl shadow-lg flex items-center justify-center text-[9px] font-semibold text-slate-800">
-                  PROBE
+                {/* Cable/neck */}
+                <div className="w-2 h-4 bg-gradient-to-b from-slate-400 to-slate-500 rounded-t-sm" />
+                {/* Probe body */}
+                <div className="w-20 h-7 bg-gradient-to-br from-slate-300 via-slate-400 to-slate-500 rounded-b-3xl shadow-2xl flex items-center justify-center border-2 border-slate-600 relative overflow-hidden">
+                  {/* Gloss effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-transparent rounded-b-3xl" />
+                  <span className="text-[8px] font-bold text-slate-800 z-10 tracking-wider">LINEAR</span>
                 </div>
               </div>
 
@@ -154,37 +158,67 @@ export const UltrasoundSimulator = ({
                   />
                 ))}
 
-                {/* Focus indicator line (if focus control is shown) */}
-                {showFocus && (
-                  <div
-                    className="absolute right-2 w-4 h-0.5 bg-cyan-400 rounded-full shadow-lg shadow-cyan-400/50 transition-all duration-300"
-                    style={{
-                      top: `${(effectiveFocus / effectiveDepth) * 100}%`,
-                    }}
-                  >
-                    <div className="absolute -right-1 -top-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse" />
-                  </div>
-                )}
-
-                {/* Depth scale on right edge */}
-                <div className="absolute right-1 top-0 bottom-0 flex flex-col justify-between text-[9px] text-slate-400 py-2">
-                  {Array.from({ length: 6 }).map((_, i) => {
-                    const d = (effectiveDepth / 5) * i;
+                {/* Depth scale with precise markers */}
+                <div className="absolute right-2 top-0 bottom-0 flex flex-col justify-between py-3 z-10">
+                  {/* Continuous depth line */}
+                  <div className="absolute right-8 top-0 bottom-0 w-px bg-cyan-500/40" />
+                  
+                  {Array.from({ length: 11 }).map((_, i) => {
+                    const d = (effectiveDepth / 10) * i;
+                    const isMajor = i % 2 === 0;
                     return (
-                      <div key={i} className="flex items-center gap-1">
-                        <div className="w-2 h-px bg-slate-600" />
-                        <span>{d.toFixed(1)}</span>
+                      <div key={i} className="flex items-center gap-1 relative" style={{ marginTop: i === 0 ? 0 : -4 }}>
+                        <div 
+                          className={`${isMajor ? 'w-3 bg-cyan-400' : 'w-2 bg-cyan-500/60'} h-px`} 
+                        />
+                        {isMajor && (
+                          <span className="text-[9px] text-cyan-300 font-mono font-semibold tabular-nums">
+                            {d.toFixed(1)}
+                          </span>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+
+                {/* Focus indicator marker (if focus control is shown) */}
+                {showFocus && (
+                  <div
+                    className="absolute right-1 z-20 transition-all duration-300"
+                    style={{
+                      top: `${(effectiveFocus / effectiveDepth) * 100}%`,
+                    }}
+                  >
+                    {/* Triangular marker */}
+                    <div className="relative flex items-center">
+                      <div className="w-0 h-0 border-t-[6px] border-t-transparent border-b-[6px] border-b-transparent border-r-[10px] border-r-cyan-400 shadow-lg shadow-cyan-400/60" />
+                      <div className="ml-1 px-2 py-0.5 bg-cyan-400/90 rounded text-[8px] font-bold text-slate-900 shadow-lg">
+                        FOCO
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Status bar at bottom */}
-              <div className="mt-2 px-3 py-2 bg-slate-900/80 rounded flex items-center justify-between text-[10px] text-slate-300 border-t border-slate-700/50">
-                <span>Profundidade: {effectiveDepth.toFixed(1)} cm</span>
-                <span>Freq: {effectiveFreq.toFixed(1)} MHz</span>
-                <span>Ganho: {((effectiveGain - 50) * 0.6).toFixed(0)} dB</span>
+              {/* Status bar - console-style */}
+              <div className="mt-2 px-4 py-2 bg-slate-950/90 rounded-lg flex items-center justify-between text-[9px] font-mono text-slate-400 border border-slate-700/50 shadow-inner">
+                <div className="flex items-center gap-4">
+                  <span className="text-cyan-400 font-semibold">DEPTH: {effectiveDepth.toFixed(1)} cm</span>
+                  <span className="text-cyan-400 font-semibold">FREQ: {effectiveFreq.toFixed(1)} MHz</span>
+                  <span className="text-cyan-400 font-semibold">GAIN: {((effectiveGain - 50) * 0.6).toFixed(0)} dB</span>
+                  {showFocus && <span className="text-cyan-400 font-semibold">FOCUS: {effectiveFocus.toFixed(1)} cm</span>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="px-2 py-1 bg-cyan-500/20 border border-cyan-500/40 rounded text-cyan-300 font-bold">
+                    B
+                  </div>
+                  <div className="px-2 py-1 bg-slate-800/50 border border-slate-600/40 rounded text-slate-500 cursor-not-allowed">
+                    M
+                  </div>
+                  <div className="px-2 py-1 bg-slate-800/50 border border-slate-600/40 rounded text-slate-500 cursor-not-allowed">
+                    D
+                  </div>
+                </div>
               </div>
             </div>
           </Card>
