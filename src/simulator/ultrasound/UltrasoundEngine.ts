@@ -543,46 +543,46 @@ export class UltrasoundEngine {
     
     switch (inclusion.type) {
       case 'cyst':
-        // Anechoic interior
-        reflectivity = 0.05;
-        speckleMod = 0.1;
+        // Anechoic interior - muito escuro
+        reflectivity = 0.02;
+        speckleMod = 0.05;
         // Bright border
         if (isNearEdge && inclusion.borderEchogenicity === 'sharp') {
-          reflectivity = 0.8;
-          speckleMod = 1.5;
+          reflectivity = 0.95;
+          speckleMod = 2.0;
         }
         break;
         
       case 'vessel':
-        // Anechoic lumen
-        reflectivity = 0.03;
-        speckleMod = 0.05;
-        // Thin hyperechoic wall
+        // Anechoic lumen - muito escuro
+        reflectivity = 0.01;
+        speckleMod = 0.02;
+        // Thin hyperechoic wall - bem brilhante
         if (isNearEdge) {
-          reflectivity = 0.7;
-          speckleMod = 1.2;
+          reflectivity = 0.9;
+          speckleMod = 1.8;
         }
         break;
         
       case 'bone_surface':
       case 'calcification':
-        // Very bright interface
-        reflectivity = 1.0;
-        speckleMod = 2.0;
-        attenuationMod = 0.1; // Strong attenuation inside
+        // Very bright interface - máximo brilho
+        reflectivity = 1.5;
+        speckleMod = 3.0;
+        attenuationMod = 0.05; // Strong attenuation inside
         break;
         
       case 'solid_mass':
         // Hypoechoic or hyperechoic depending on medium
-        reflectivity = 0.4;
-        speckleMod = 0.8;
+        reflectivity = 0.5;
+        speckleMod = 1.0;
         break;
         
       case 'heterogeneous_lesion':
-        // Variable echogenicity
+        // Variable echogenicity - maior contraste
         const heteroNoise = this.noise2D(uv.x * 100, uv.y * 100);
-        reflectivity = 0.3 + heteroNoise * 0.3;
-        speckleMod = 0.8 + heteroNoise * 0.4;
+        reflectivity = 0.2 + heteroNoise * 0.5;
+        speckleMod = 0.6 + heteroNoise * 0.8;
         break;
     }
     
@@ -598,12 +598,12 @@ export class UltrasoundEngine {
       if (!inc.hasStrongShadow) continue;
       if (depth <= inc.centerDepthCm) continue; // Only shadow below inclusion
       
-      // Check if in shadow column
+      // Check if in shadow column - sombra mais forte e mais visível
       const inShadowColumn = Math.abs(lateralPos - inc.centerLateralPos) <= inc.sizeCm.width / 2;
       if (inShadowColumn) {
         const depthBelowInc = depth - (inc.centerDepthCm + inc.sizeCm.height / 2);
-        const shadowStrength = Math.exp(-depthBelowInc * 2); // Exponential decay
-        shadowFactor *= Math.max(0.1, 1.0 - shadowStrength * 0.9);
+        const shadowStrength = Math.exp(-depthBelowInc * 1.0); // Decaimento mais lento
+        shadowFactor *= Math.max(0.05, 1.0 - shadowStrength * 0.95); // Sombra mais escura
       }
     }
     
@@ -619,13 +619,13 @@ export class UltrasoundEngine {
       if (!inc.posteriorEnhancement) continue;
       if (depth <= inc.centerDepthCm) continue; // Only enhance below inclusion
       
-      // Check if in enhancement column
+      // Check if in enhancement column - reforço mais visível
       const inEnhancementColumn = Math.abs(lateralPos - inc.centerLateralPos) <= inc.sizeCm.width / 2;
       if (inEnhancementColumn) {
         const depthBelowInc = depth - (inc.centerDepthCm + inc.sizeCm.height / 2);
-        // Gradual enhancement that fades with distance
-        const enhancementStrength = Math.exp(-depthBelowInc * 1.5);
-        enhancement *= 1.0 + enhancementStrength * 0.5; // Up to +50% gain
+        // Gradual enhancement that fades with distance - mais intenso
+        const enhancementStrength = Math.exp(-depthBelowInc * 1.0);
+        enhancement *= 1.0 + enhancementStrength * 0.8; // Up to +80% gain - mais visível
       }
     }
     
