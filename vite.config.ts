@@ -2,13 +2,28 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
+import fs from "fs";
+
+// Force clean cache on startup
+const cacheDir = path.resolve(__dirname, "node_modules/.vite");
+if (fs.existsSync(cacheDir)) {
+  console.log("🧹 Cleaning Vite cache...");
+  fs.rmSync(cacheDir, { recursive: true, force: true });
+  console.log("✅ Cache cleared!");
+}
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    // Force complete restart on file changes
+    watch: {
+      usePolling: true,
+    },
   },
+  // Use a specific cache directory and force its recreation
+  cacheDir: path.resolve(__dirname, "node_modules/.vite-fresh"),
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {
     alias: {
