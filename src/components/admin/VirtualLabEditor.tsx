@@ -8,12 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Slider } from "@/components/ui/slider";
-import { ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { virtualLabService, VirtualLab, VirtualLabType, UltrasoundLabConfig } from "@/services/virtualLabService";
-import { getAllPresets } from "@/config/ultrasoundPresets";
+import { virtualLabService, VirtualLab, VirtualLabType } from "@/services/virtualLabService";
+import { getAllPresets, getDefaultLayersForPreset, getDefaultInclusionsForPreset } from "@/config/ultrasoundPresets";
 import { UltrasoundSimulatorAdvanced } from "@/components/labs/UltrasoundSimulatorAdvanced";
+import { AcousticLayersEditor } from "./AcousticLayersEditor";
+import { InclusionsEditor } from "./InclusionsEditor";
 
 export default function VirtualLabEditor() {
   const navigate = useNavigate();
@@ -34,6 +35,8 @@ export default function VirtualLabEditor() {
           showFrequency: true,
           showFocus: true,
         },
+        layers: getDefaultLayersForPreset("generic_muscle"),
+        inclusions: getDefaultInclusionsForPreset("generic_muscle"),
       },
     },
   });
@@ -44,16 +47,28 @@ export default function VirtualLabEditor() {
     if (isEdit && labId) {
       loadLab();
     }
-  }, [labId]);
+  }, [labId, isEdit]);
 
   const loadLab = async () => {
     try {
       setLoading(true);
       const data = await virtualLabService.getLabById(labId!);
       if (data) {
+        // Ensure layers and inclusions exist
+        if (data.config_data.ultrasoundConfig && !data.config_data.ultrasoundConfig.layers) {
+          data.config_data.ultrasoundConfig.layers = getDefaultLayersForPreset(
+            data.config_data.ultrasoundConfig.presetId
+          );
+        }
+        if (data.config_data.ultrasoundConfig && !data.config_data.ultrasoundConfig.inclusions) {
+          data.config_data.ultrasoundConfig.inclusions = getDefaultInclusionsForPreset(
+            data.config_data.ultrasoundConfig.presetId
+          );
+        }
         setLab(data);
       }
     } catch (error: any) {
+      console.error("Error loading lab:", error);
       toast.error("Erro ao carregar laboratório", { description: error.message });
     } finally {
       setLoading(false);
@@ -61,8 +76,19 @@ export default function VirtualLabEditor() {
   };
 
   const handleSave = async () => {
-    if (!lab.name) {
-      toast.error("O nome é obrigatório");
+    // Validation
+    if (!lab.name?.trim()) {
+      toast.error("Validação", { description: "O nome do laboratório é obrigatório" });
+      return;
+    }
+
+    if (!lab.lab_type) {
+      toast.error("Validação", { description: "O tipo de laboratório é obrigatório" });
+      return;
+    }
+
+    if (lab.lab_type === "ultrasound" && !lab.config_data.ultrasoundConfig?.presetId) {
+      toast.error("Validação", { description: "Selecione um preset de anatomia" });
       return;
     }
 
@@ -70,14 +96,15 @@ export default function VirtualLabEditor() {
       setLoading(true);
       if (isEdit && labId) {
         await virtualLabService.updateLab(labId, lab);
-        toast.success("Laboratório atualizado com sucesso!");
+        toast.success("Sucesso!", { description: "Laboratório atualizado com sucesso" });
       } else {
         await virtualLabService.createLab(lab);
-        toast.success("Laboratório criado com sucesso!");
+        toast.success("Sucesso!", { description: "Laboratório criado com sucesso" });
       }
       navigate("/admin/labs");
     } catch (error: any) {
-      toast.error("Erro ao salvar laboratório", { description: error.message });
+      console.error("Error saving lab:", error);
+      toast.error("Erro ao salvar", { description: error.message });
     } finally {
       setLoading(false);
     }
@@ -86,15 +113,47 @@ export default function VirtualLabEditor() {
   const ultrasoundConfig = lab.config_data.ultrasoundConfig;
   const currentPreset = ultrasoundConfig ? allPresets.find(p => p.id === ultrasoundConfig.presetId) : null;
 
+  const handlePresetChange = (presetId: string) => {
+    if (!ultrasoundConfig) return;
+    
+    setLab({
+      ...lab,
+      config_data: {
+        ...lab.config_data,
+        ultrasoundConfig: {
+          ...ultrasoundConfig,
+          presetId: presetId as any,
+          layers: getDefaultLayersForPreset(presetId as any),
+          inclusions: getDefaultInclusionsForPreset(presetId as any),
+        },
+      },
+    });
+    
+    toast.info("Preset alterado", { 
+      description: "Camadas e inclusões foram redefinidas para o novo preset" 
+    });
+  };
+
+  if (loading && isEdit) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Carregando laboratório...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" onClick={() => navigate("/admin/labs")}>
+        <Button variant="ghost" onClick={() => navigate("/admin/labs")} disabled={loading}>
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-bold">
             {isEdit ? "Editar Laboratório Virtual" : "Novo Laboratório Virtual"}
           </h1>
@@ -102,6 +161,19 @@ export default function VirtualLabEditor() {
             Configure um laboratório virtual reutilizável para anexar a múltiplas cápsulas
           </p>
         </div>
+        <Button onClick={handleSave} disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="h-4 w-4 mr-2" />
+              Salvar laboratório
+            </>
+          )}
+        </Button>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -166,20 +238,9 @@ export default function VirtualLabEditor() {
                 <CardContent className="space-y-4">
                   <div>
                     <Label>Preset Anatômico</Label>
-                    <Select
+                     <Select
                       value={ultrasoundConfig.presetId}
-                      onValueChange={(value) =>
-                        setLab({
-                          ...lab,
-                          config_data: {
-                            ...lab.config_data,
-                            ultrasoundConfig: {
-                              ...ultrasoundConfig,
-                              presetId: value as any,
-                            },
-                          },
-                        })
-                      }
+                      onValueChange={handlePresetChange}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -203,6 +264,36 @@ export default function VirtualLabEditor() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Acoustic Layers */}
+              <AcousticLayersEditor
+                layers={ultrasoundConfig.layers || []}
+                onChange={(layers) => setLab({
+                  ...lab,
+                  config_data: {
+                    ...lab.config_data,
+                    ultrasoundConfig: {
+                      ...ultrasoundConfig,
+                      layers,
+                    },
+                  },
+                })}
+              />
+
+              {/* Inclusions */}
+              <InclusionsEditor
+                inclusions={ultrasoundConfig.inclusions || []}
+                onChange={(inclusions) => setLab({
+                  ...lab,
+                  config_data: {
+                    ...lab.config_data,
+                    ultrasoundConfig: {
+                      ...ultrasoundConfig,
+                      inclusions,
+                    },
+                  },
+                })}
+              />
 
               <Card>
                 <CardHeader>
@@ -246,53 +337,64 @@ export default function VirtualLabEditor() {
         </div>
 
         {/* Live Preview Panel */}
-        <div>
+        <div className="space-y-6 lg:sticky lg:top-4 lg:self-start">
           <Card>
             <CardHeader>
-              <CardTitle>Visualização ao Vivo</CardTitle>
-              <CardDescription>
-                Pré-visualização do laboratório com as configurações atuais
-              </CardDescription>
+              <CardTitle>Pré-visualização</CardTitle>
+              <CardDescription>Visualização em tempo real do laboratório configurado</CardDescription>
             </CardHeader>
             <CardContent>
-              {lab.lab_type === "ultrasound" && ultrasoundConfig && currentPreset ? (
-                <UltrasoundSimulatorAdvanced
-                  config={{
-                    enabled: true,
-                    ...ultrasoundConfig.controls,
-                    showTGC: false,
-                    showDynamicRange: false,
-                    showTransducerSelector: false,
-                    showModeSelector: false,
-                    showCompoundToggle: false,
-                    showHarmonicToggle: false,
-                    showZoom: false,
-                    presetAnatomy: currentPreset.tissueProfile as any,
-                    initialGain: currentPreset.recommendedGain,
-                    initialDepth: currentPreset.recommendedDepthCm,
-                    initialFrequency: currentPreset.recommendedFrequencyMHz,
-                    initialTransducer: currentPreset.transducerType,
-                    initialMode: "b-mode",
-                  }}
-                />
+              {lab.lab_type === "ultrasound" && ultrasoundConfig ? (
+                <div className="rounded-lg overflow-hidden bg-black">
+                  <UltrasoundSimulatorAdvanced
+                    config={{
+                      enabled: true,
+                      showGain: ultrasoundConfig.controls.showGain,
+                      showDepth: ultrasoundConfig.controls.showDepth,
+                      showFrequency: ultrasoundConfig.controls.showFrequency,
+                      showFocus: ultrasoundConfig.controls.showFocus,
+                      showTGC: false,
+                      showDynamicRange: false,
+                      showTransducerSelector: false,
+                      showModeSelector: false,
+                      showCompoundToggle: false,
+                      showHarmonicToggle: false,
+                      showZoom: false,
+                      presetAnatomy: (currentPreset?.tissueProfile || "muscle") as any,
+                      lockGain: false,
+                      lockDepth: false,
+                      lockFrequency: false,
+                      lockTransducer: false,
+                      initialGain: currentPreset?.recommendedGain || 50,
+                      initialDepth: currentPreset?.recommendedDepthCm || 6,
+                      initialFrequency: currentPreset?.recommendedFrequencyMHz || 7.5,
+                      initialTransducer: currentPreset?.transducerType || "linear",
+                      initialMode: "b-mode",
+                    }}
+                  />
+                </div>
               ) : (
-                <div className="flex items-center justify-center h-64 bg-muted rounded-lg">
-                  <p className="text-muted-foreground">
-                    Selecione um tipo de laboratório para visualizar
-                  </p>
+                <div className="text-center py-12 text-muted-foreground">
+                  <p>Selecione um tipo de laboratório para ver a pré-visualização</p>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
-      </div>
 
-      {/* Save Button */}
-      <div className="mt-6 flex justify-end">
-        <Button onClick={handleSave} disabled={loading} size="lg">
-          <Save className="h-4 w-4 mr-2" />
-          {loading ? "Salvando..." : "Salvar Laboratório Virtual"}
-        </Button>
+          {/* Quick help */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Dicas</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground space-y-2">
+              <p>• Configure as camadas acústicas para definir a propagação do ultrassom</p>
+              <p>• Adicione inclusões para simular cistos, vasos, ossos e lesões</p>
+              <p>• A diferença de impedância entre meios afeta reflexões e sombreamento</p>
+              <p>• Meios anecoicos (água, cistos) produzem reforço posterior</p>
+              <p>• Interfaces ósseas produzem sombras acústicas intensas</p>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
