@@ -29,6 +29,23 @@ function multiOctaveNoise(x: number, y: number, octaves: number, seed: number): 
 }
 
 /**
+ * Rayleigh distribution for realistic speckle intensity
+ */
+function rayleighDistribution(x: number, sigma: number = 0.5): number {
+  return (x / (sigma * sigma)) * Math.exp(-(x * x) / (2 * sigma * sigma));
+}
+
+/**
+ * Box-Muller transform for Gaussian random
+ */
+function gaussianRandom(mean: number = 0, stdDev: number = 1): number {
+  const u1 = Math.random();
+  const u2 = Math.random();
+  const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+  return z0 * stdDev + mean;
+}
+
+/**
  * Generate realistic ultrasound frame
  */
 function generateUltrasoundFrame(
@@ -42,17 +59,20 @@ function generateUltrasoundFrame(
   const data = imageData.data;
 
   // Physics parameters
-  const attenuationCoeff = 0.5 * frequency; // dB/cm/MHz
+  const attenuationCoeff = 0.7 * frequency; // dB/cm/MHz (increased for stronger attenuation)
   const maxDepthCm = depth;
   const focusDepthCm = focus;
   const gainFactor = Math.pow(10, (gain - 50) / 50); // Convert to linear scale
   const beamWidth = 2.0 / frequency; // Narrower beam for higher frequency
 
   // Tissue layers (as depth ratios)
-  const skinEnd = 0.08;
-  const fatEnd = 0.25;
-  const fasciaDepth = 0.35;
-  const muscleStart = 0.4;
+  const skinEnd = 0.06;
+  const fatEnd = 0.20;
+  const fascia1Depth = 0.25;
+  const fascia2Depth = 0.45;
+  const muscleStart = 0.30;
+  const deepShadowStart = 0.75;
+  const boneDepth = 0.85;
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -78,43 +98,99 @@ function generateUltrasoundFrame(
       const attenuation_dB = attenuationCoeff * depthCm;
       const attenuationFactor = Math.pow(10, -attenuation_dB / 20);
 
-      // Focal zone enhancement (Gaussian)
-      const focusSigma = 1.5;
+      // Focal zone enhancement with beam narrowing and blur
+      const focusSigma = 1.0;
+      const distanceFromFocus = Math.abs(depthCm - focusDepthCm);
       const focusEnhancement = Math.exp(
-        -Math.pow(depthCm - focusDepthCm, 2) / (2 * focusSigma * focusSigma)
+        -Math.pow(distanceFromFocus, 2) / (2 * focusSigma * focusSigma)
       );
-      const totalFocusGain = 0.5 + 0.5 * focusEnhancement;
+      const totalFocusGain = 0.6 + 0.8 * focusEnhancement;
+      
+      // Blur away from focus (reduces contrast)
+      const blurFactor = 1.0 - 0.3 * Math.min(distanceFromFocus / 2, 1);
 
-      // Base speckle noise
+      // Multi-scale speckle with Rayleigh modulation
       const noiseScale = 0.02 * frequency; // Higher frequency = finer speckle
-      const speckleNoise = multiOctaveNoise(
-        x * noiseScale + time * 0.01,
-        y * noiseScale + time * 0.015,
-        3,
+      const fineSpeckle = multiOctaveNoise(
+        x * noiseScale + time * 0.008,
+        y * noiseScale + time * 0.012,
+        4,
         12345
       );
+      const mediumSpeckle = multiOctaveNoise(
+        x * noiseScale * 0.5 + time * 0.005,
+        y * noiseScale * 0.5 + time * 0.007,
+        3,
+        54321
+      );
+      
+      // Rayleigh-distributed speckle intensity
+      const speckleBase = (fineSpeckle * 0.6 + mediumSpeckle * 0.4);
+      const rayleighMod = rayleighDistribution(speckleBase, 0.4);
+      const speckleNoise = speckleBase * (0.7 + 0.3 * rayleighMod);
 
-      // Tissue-specific reflectivity
+      // Tissue-specific reflectivity with enhanced layers
       let tissueReflectivity = 0.3; // Base muscle
       let tissueBoost = 1.0;
+      let posteriorEnhancement = 1.0;
 
-      if (depthRatio < skinEnd) {
-        // Bright skin surface
-        tissueReflectivity = 0.9;
-        tissueBoost = 1.5;
-      } else if (depthRatio < fatEnd) {
-        // Hypoechoic fat
-        tissueReflectivity = 0.15;
-        tissueBoost = 0.7;
-      } else if (Math.abs(depthRatio - fasciaDepth) < 0.02) {
-        // Hyperechoic fascia line
+      // Near-field clutter (very bright close to probe)
+      if (depthRatio < 0.03) {
+        tissueReflectivity = 0.95;
+        tissueBoost = 2.0;
+      }
+      // Bright skin surface
+      else if (depthRatio < skinEnd) {
         tissueReflectivity = 0.85;
-        tissueBoost = 1.8;
-      } else if (depthRatio > muscleStart) {
-        // Muscle with striations
-        const striationPattern = Math.sin(y * 0.3 + x * 0.05 + time * 0.1) * 0.15 + 0.85;
-        tissueReflectivity = 0.35 * striationPattern;
-        tissueBoost = 1.1;
+        tissueBoost = 1.4;
+      }
+      // Heterogeneous subcutaneous fat (hypoechoic with texture)
+      else if (depthRatio < fatEnd) {
+        const fatNoise = multiOctaveNoise(x * 0.03, y * 0.03, 2, 99999);
+        tissueReflectivity = 0.12 + fatNoise * 0.08;
+        tissueBoost = 0.6;
+        posteriorEnhancement = 1.15; // Posterior enhancement below hypoechoic
+      }
+      // Hyperechoic fascia line 1
+      else if (Math.abs(depthRatio - fascia1Depth) < 0.015) {
+        tissueReflectivity = 0.90;
+        tissueBoost = 2.0;
+      }
+      // Muscle with anisotropic striations
+      else if (depthRatio >= muscleStart && depthRatio < deepShadowStart) {
+        const striationAngle = Math.sin((y * 0.25 + x * 0.08) + time * 0.08);
+        const striationPattern = Math.abs(striationAngle) * 0.2 + 0.8;
+        tissueReflectivity = 0.32 * striationPattern;
+        tissueBoost = 1.0;
+      }
+      // Hyperechoic fascia line 2
+      else if (Math.abs(depthRatio - fascia2Depth) < 0.015) {
+        tissueReflectivity = 0.88;
+        tissueBoost = 1.9;
+      }
+      // Deep soft shadow
+      else if (depthRatio >= deepShadowStart && depthRatio < boneDepth) {
+        tissueReflectivity = 0.15;
+        tissueBoost = 0.5;
+      }
+      // Bone-like reflective band with acoustic shadowing
+      else if (depthRatio >= boneDepth) {
+        if (Math.abs(depthRatio - boneDepth) < 0.02) {
+          // Bright bone surface
+          tissueReflectivity = 0.95;
+          tissueBoost = 2.2;
+        } else {
+          // Acoustic shadow below bone
+          tissueReflectivity = 0.05;
+          tissueBoost = 0.3;
+        }
+      }
+
+      // Lateral shadowing near edges
+      const edgeDistance = Math.abs(lateralRatio);
+      if (edgeDistance > 0.4) {
+        const shadowFactor = Math.max(0, 1 - (edgeDistance - 0.4) / 0.1);
+        tissueBoost *= 0.5 + 0.5 * shadowFactor;
       }
 
       // Combine all factors
@@ -125,10 +201,14 @@ function generateUltrasoundFrame(
         beamIntensity *
         gainFactor *
         tissueBoost *
-        (0.5 + 0.5 * speckleNoise);
+        posteriorEnhancement *
+        blurFactor *
+        (0.4 + 0.6 * speckleNoise);
 
-      // Add subtle motion/shimmer
-      intensity *= 0.95 + 0.05 * Math.sin(time * 0.5 + x * 0.1 + y * 0.1);
+      // Add subtle motion/shimmer and micro-jitter
+      const motionNoise = Math.sin(time * 0.5 + x * 0.1 + y * 0.1) * 0.03;
+      const jitter = (Math.random() - 0.5) * 0.015;
+      intensity *= 0.97 + motionNoise + jitter;
 
       // Clamp and convert to grayscale
       intensity = Math.max(0, Math.min(1, intensity));
